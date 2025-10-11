@@ -7,6 +7,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "Inventory.h"
 #include "Interaction/Inv_Highlightable.h"
+#include "InventoryManagement/Components/Inv_InventoryComponent.h"
 #include "Items/Components/Inv_ItemComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Widgets/HUD/Inv_HUDWidget.h"
@@ -16,6 +17,12 @@ AInv_PlayerContriller::AInv_PlayerContriller()
 	PrimaryActorTick.bCanEverTick = true;
 	
 	TraceLength = 500.f;
+}
+
+void AInv_PlayerContriller::ToggleInventoryMenu()
+{
+	if (!InventoryComponent.IsValid()) return;
+	InventoryComponent->ToggleInventoryMenu();
 }
 
 void AInv_PlayerContriller::BeginPlay()
@@ -29,6 +36,8 @@ void AInv_PlayerContriller::BeginPlay()
 		Subsystem->AddMappingContext(DefaultIMC, 0);
 	}
 
+	InventoryComponent = FindComponentByClass<UInv_InventoryComponent>();
+
 	CreateHUDWidget();
 }
 
@@ -38,7 +47,9 @@ void AInv_PlayerContriller::SetupInputComponent()
 
 	UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent);
 
-	EnhancedInputComponent->BindAction(PrimaryInteractAction, ETriggerEvent::Started, this, &AInv_PlayerContriller::PrimaryInteract);
+	EnhancedInputComponent->BindAction(PrimaryInteractAction, ETriggerEvent::Started, this, &ThisClass::PrimaryInteract);
+
+	EnhancedInputComponent->BindAction(ToggleInventoryAction, ETriggerEvent::Started, this, &ThisClass::ToggleInventoryMenu);
 }
 
 void AInv_PlayerContriller::Tick(float DeltaTime)
