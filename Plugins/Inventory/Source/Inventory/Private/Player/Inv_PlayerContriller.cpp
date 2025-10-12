@@ -62,7 +62,13 @@ void AInv_PlayerContriller::Tick(float DeltaTime)
 
 void AInv_PlayerContriller::PrimaryInteract()
 {
-	UE_LOG(LogTemp, Warning, TEXT("상호작용"));
+	if (!CurrentItemActor.IsValid()) return;
+
+	UInv_ItemComponent* ItemComponent = CurrentItemActor->FindComponentByClass<UInv_ItemComponent>();
+	if (!IsValid(ItemComponent) || !InventoryComponent.IsValid()) return;
+
+	InventoryComponent->TryAddItem(ItemComponent);
+	
 }
 
 void AInv_PlayerContriller::CreateHUDWidget()
