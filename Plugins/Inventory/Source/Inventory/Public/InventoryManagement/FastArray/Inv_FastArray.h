@@ -1,12 +1,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "InventoryManagement/Components/Inv_InventoryComponent.h"
 #include "Net/Serialization/FastArraySerializer.h"
 #include "Inv_FastArray.generated.h"
 
-class UInv_InventoryItem;
+class UInv_ItemComponent;
 class UInv_InventoryComponent;
+class UInv_InventoryItem;
 
 /** 인벤토리의 단일 항목 */
 USTRUCT(BlueprintType)
@@ -47,7 +47,7 @@ public:
 		return FastArrayDeltaSerialize<FInv_InventoryEntry, FInv_InventoryFastArray>(Entries, DeltaParams, *this);
 	}
 
-	UInv_InventoryItem* AddEntry(UInv_InventoryComponent* InItemComponent);
+	UInv_InventoryItem* AddEntry(UInv_ItemComponent* InItemComponent);
 	UInv_InventoryItem* AddEntry(UInv_InventoryItem* InItem);
 	void RemoveEntry(UInv_InventoryItem* InItem);
 	
