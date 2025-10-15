@@ -6,8 +6,12 @@
 #include "Blueprint/UserWidget.h"
 #include "Items/Inv_InventoryItem.h"
 #include "Types/Inv_GridTypes.h"
+#include "Widgets/Inventory/SlottedItems/Inv_SlottedItem.h"
 #include "Inv_InventoryGrid.generated.h"
 
+struct FInv_ImageFragment;
+struct FInv_GridFragment;
+class UInv_SlottedItem;
 class UInv_ItemComponent;
 class UInv_InventoryComponent;
 class UCanvasPanel;
@@ -36,8 +40,17 @@ private:
 	FInv_SlotAvailabilityResult HasRoomForItem(const UInv_InventoryItem* Item);
 	FInv_SlotAvailabilityResult HasRoomForItem(const FInv_ItemManifest& Manifest);
 	void AddItemToIndices(const FInv_SlotAvailabilityResult& Result, UInv_InventoryItem* NewItem);
-	
+	UInv_SlottedItem* CreateSlottedItem(UInv_InventoryItem* Item,
+		const bool bStackable,
+		const int32 StackAmount,
+		const FInv_GridFragment* GridFragment,
+		const FInv_ImageFragment* ImageFragment,
+		const int32 Index);
+
 	bool MatchesCategory(const UInv_InventoryItem* Item) const;
+	FVector2D GetDrawSize(const FInv_GridFragment* GridFragment) const;
+	void SetSlottedItemImage(const UInv_SlottedItem* SlottedItem, const FInv_GridFragment* GridFragment, const FInv_ImageFragment* ImageFragment) const;
+	void AddItemAtIndex(UInv_InventoryItem* Item, const int32 Index, const bool bStackable, const int32 StackAmount);
 	
 	TWeakObjectPtr<UInv_InventoryComponent> InventoryComponent;
 	
@@ -46,13 +59,17 @@ private:
 
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UCanvasPanel> GridCanvasPanel;
+
+	UPROPERTY(EditAnywhere, Category = "Inventory")
+	TSubclassOf<UInv_SlottedItem> SlottedItemClass;
+
 	
 	UPROPERTY(EditAnywhere, Category = "Inventory")
 	TSubclassOf<UInv_GridSlot> GridSlotClass;
 	
 	UPROPERTY()
 	TArray<TObjectPtr<UInv_GridSlot>> GridSlots;
-
+	
 	UPROPERTY(EditAnywhere, Category = "Inventory")
 	int32 Rows;
 
