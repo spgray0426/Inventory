@@ -2,8 +2,14 @@
 
 
 #include "Widgets/Inventory/GridSlots/Inv_GridSlot.h"
+#include "Items/Inv_InventoryItem.h"
 
 #include "Components/Image.h"
+
+void UInv_GridSlot::SetInventoryItem(UInv_InventoryItem* Item)
+{
+    InventoryItem = Item;
+}
 
 // 아래 함수들 스위치로 바꾸고 싶네
 void UInv_GridSlot::SetOccupiedTexture()
