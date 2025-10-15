@@ -47,7 +47,7 @@ private:
 };
 
 USTRUCT(BlueprintType)
-struct FInvImageFragment : public FInv_ItemFragment
+struct FInv_ImageFragment : public FInv_ItemFragment
 {
 	GENERATED_BODY()
 
