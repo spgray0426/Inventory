@@ -5,6 +5,7 @@
 
 #include "Components/Image.h"
 
+// 아래 함수들 스위치로 바꾸고 싶네
 void UInv_GridSlot::SetOccupiedTexture()
 {
     GridSlotState = EInv_GridSlotState::Occupied;
