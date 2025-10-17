@@ -39,20 +39,94 @@ FInv_SlotAvailabilityResult UInv_InventoryGrid::HasRoomForItem(const UInv_Invent
 FInv_SlotAvailabilityResult UInv_InventoryGrid::HasRoomForItem(const FInv_ItemManifest& Manifest)
 {
 	FInv_SlotAvailabilityResult Result;
-	Result.TotalRoomToFill = 1;
-	Result.bStackable = true;
-	
-	FInv_SlotAvailability SlotAvailability;
-	SlotAvailability.AmountToFill = 2;
-	SlotAvailability.Index = 0;
-	Result.SlotAvailabilities.Add(MoveTemp(SlotAvailability));
 
-	FInv_SlotAvailability SlotAvailability2;
-	SlotAvailability2.AmountToFill = 5;
-	SlotAvailability2.Index = 1;
-	Result.SlotAvailabilities.Add(MoveTemp(SlotAvailability2));
+	//항목이 쌓을 수 있는지 확인합니다.
+	const FInv_StackableFragment* StackableFragment = Manifest.GetFragmentOfType<FInv_StackableFragment>();
+	Result.bStackable = StackableFragment != nullptr;
+
+	//추가할 스택 수를 결정합니다.
+	const int32 MaxStackSize = StackableFragment ? StackableFragment->GetMaxStackSize() : 1;
+	int32 AmountToFill = StackableFragment ? StackableFragment->GetMaxStackSize() : 1;
+
+	TSet<int32> CheckedIndices;
 	
+	for (const auto& GridSlot : GridSlots)
+	{
+		if (AmountToFill == 0 ) break;
+
+		if (IsIndexClaimed(CheckedIndices, GridSlot->GetIndex())) continue;
+
+		TSet<int32> TentativelyClaimed;
+		if (!HasRoomAtIndex(GridSlot, GetItemDimensions(Manifest), CheckedIndices, TentativelyClaimed, Manifest.GetItemType(), MaxStackSize))
+		{
+			continue;
+		}
+
+		CheckedIndices.Append(TentativelyClaimed);
+	}
 	return Result;
+}
+
+bool UInv_InventoryGrid::HasRoomAtIndex(const UInv_GridSlot* GridSlot,const FIntPoint& Dimensions,const TSet<int32>& CheckedIndices,TSet<int32>& OutTentativelyClaimed, const FGameplayTag& ItemType, const int32 MaxStackSize)
+{
+	bool bHasRoomAtIndex = true;
+
+	UInv_InventoryStatics::ForEach2D(GridSlots, GridSlot->GetIndex(), Dimensions, Columns, [&](const UInv_GridSlot* SubGridSlot)
+	{
+		if (CheckSlotConstraints(GridSlot, SubGridSlot, CheckedIndices, OutTentativelyClaimed, ItemType, MaxStackSize))
+		{
+			OutTentativelyClaimed.Add(SubGridSlot->GetIndex());
+		}
+		else
+		{
+			bHasRoomAtIndex = false;
+		}
+	});
+
+	return bHasRoomAtIndex;
+}
+
+bool UInv_InventoryGrid::CheckSlotConstraints(const UInv_GridSlot* GridSlot, const UInv_GridSlot* SubGridSlot,const TSet<int32>& CheckedIndices, TSet<int32>& OutTentativelyClaimed, const FGameplayTag& ItemType, const int32 MaxStackSize) const
+{
+	if (IsIndexClaimed(CheckedIndices, SubGridSlot->GetIndex())) return false;
+
+	if (!HasValidItem(SubGridSlot))
+	{
+		OutTentativelyClaimed.Add(SubGridSlot->GetIndex());
+		return true;
+	}
+
+	if (!IsUpperLeftSlot(GridSlot, SubGridSlot)) return false;
+
+	const UInv_InventoryItem* SubItem = SubGridSlot->GetInventoryItem().Get();
+	if (!SubItem->IsStackable()) return false;
+
+	if (!DoesItemTypeMatch(SubItem, ItemType)) return false;
+
+	if (GridSlot->GetStackCount() > MaxStackSize) return false;
+	
+	return true ;
+}
+ 
+bool UInv_InventoryGrid::HasValidItem(const UInv_GridSlot* GridSlot) const
+{
+	return GridSlot->GetInventoryItem().IsValid();
+}
+
+bool UInv_InventoryGrid::IsUpperLeftSlot(const UInv_GridSlot* GridSlot, const UInv_GridSlot* SubGridSlot) const
+{
+	return SubGridSlot->GetUpperLeftGridIndex() == GridSlot->GetIndex();
+}
+
+bool UInv_InventoryGrid::DoesItemTypeMatch(const UInv_InventoryItem* SubItem, const FGameplayTag& ItemType) const
+{
+	return SubItem->GetItemManifest().GetItemType().MatchesTagExact(ItemType);
+}
+
+FIntPoint UInv_InventoryGrid::GetItemDimensions(const FInv_ItemManifest& Manifest) const
+{
+	const FInv_GridFragment* GridFragment = Manifest.GetFragmentOfType<FInv_GridFragment>();
+	return GridFragment ? GridFragment->GetGridSize() : FIntPoint(1, 1);
 }
 
 void UInv_InventoryGrid::AddItem(UInv_InventoryItem* Item)
@@ -114,9 +188,11 @@ void UInv_InventoryGrid::UpdateGridSlots(UInv_InventoryItem* NewItem, const int3
 		GridSlot->SetOccupiedTexture();
 		GridSlot->SetAvailable(false);
 	});
+}
 
-	
-	
+bool UInv_InventoryGrid::IsIndexClaimed(const TSet<int32>& CheckedIndices, const int32 Index) const
+{
+	return CheckedIndices.Contains(Index);
 }
 
 void UInv_InventoryGrid::AddItemAtIndex(UInv_InventoryItem* Item, const int32 Index, const bool bStackable, const int32 StackAmount)
