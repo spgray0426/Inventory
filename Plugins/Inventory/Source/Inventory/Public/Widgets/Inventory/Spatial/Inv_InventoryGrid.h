@@ -74,6 +74,9 @@ private:
 	FVector2D GetDrawSize(const FInv_GridFragment* GridFragment) const;
 	void SetSlottedItemImage(const UInv_SlottedItem* SlottedItem, const FInv_GridFragment* GridFragment, const FInv_ImageFragment* ImageFragment) const;
 	void AddItemAtIndex(UInv_InventoryItem* Item, const int32 Index, const bool bStackable, const int32 StackAmount);
+
+	UFUNCTION()
+	void AddStacks(const FInv_SlotAvailabilityResult& Result);
 	
 	TWeakObjectPtr<UInv_InventoryComponent> InventoryComponent;
 	
