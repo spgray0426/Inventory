@@ -7,6 +7,7 @@
 #include "Net/UnrealNetwork.h"
 #include "Widgets/Inventory/InventoryBase/Inv_InventoryBase.h"
 #include "Items/Inv_InventoryItem.h"
+#include "Items/Fragments/Inv_ItemFragment.h"
 
 UInv_InventoryComponent::UInv_InventoryComponent() : InventoryList(this)
 {
@@ -56,6 +57,8 @@ void UInv_InventoryComponent::Server_AddNewItem_Implementation(UInv_ItemComponen
 	{
 		OnItemAdded.Broadcast(NewItem);
 	}
+
+	ItemComponent->PickedUp();
 }
 
 void UInv_InventoryComponent::Server_AddStacksToItem_Implementation(UInv_ItemComponent* ItemComponent, int32 StackCount,int32 Remainder)
@@ -65,6 +68,15 @@ void UInv_InventoryComponent::Server_AddStacksToItem_Implementation(UInv_ItemCom
 	if (!IsValid(Item)) return;
 
 	Item->SetTotalStackCount(Item->GetTotalStackCount() + StackCount);
+
+	if (Remainder == 0)
+	{
+		ItemComponent->PickedUp();
+	}
+	else if (FInv_StackableFragment* StackableFragment = ItemComponent->GetItemManifest().GetFragmentOfTypeMutable<FInv_StackableFragment>())
+	{
+		StackableFragment->SetStackCount(Remainder);
+	}
 }
 
 void UInv_InventoryComponent::ToggleInventoryMenu()
