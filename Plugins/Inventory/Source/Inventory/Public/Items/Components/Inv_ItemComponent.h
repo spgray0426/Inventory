@@ -19,10 +19,12 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	
 	FString GetPickupMessage() const { return PickupMessage; }
-
 	FInv_ItemManifest GetItemManifest() const { return ItemManifest; }
+	void PickedUp();
 protected:
 
+	UFUNCTION(BlueprintImplementableEvent, Category = "Inventory")
+	void OnPickedUp();
 private:
 
 	UPROPERTY(Replicated, EditAnywhere, Category = "Inventory")
