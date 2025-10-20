@@ -9,6 +9,7 @@
 #include "Widgets/Inventory/SlottedItems/Inv_SlottedItem.h"
 #include "Inv_InventoryGrid.generated.h"
 
+class UInv_HoverItem;
 struct FInv_ImageFragment;
 struct FInv_GridFragment;
 class UInv_SlottedItem;
@@ -77,6 +78,12 @@ private:
 
 	UFUNCTION()
 	void AddStacks(const FInv_SlotAvailabilityResult& Result);
+
+	UFUNCTION()
+	void OnSlottedItemClicked(int32 Index, const FPointerEvent& MouseEvent);
+
+	bool IsRightClick(const FPointerEvent& MouseEvent) const;
+	bool IsLeftClick(const FPointerEvent& MouseEvent) const;
 	
 	TWeakObjectPtr<UInv_InventoryComponent> InventoryComponent;
 	
@@ -97,6 +104,12 @@ private:
 	
 	UPROPERTY()
 	TArray<TObjectPtr<UInv_GridSlot>> GridSlots;
+
+	UPROPERTY(EditAnywhere, Category = "Inventory")
+	TSubclassOf<UInv_HoverItem> HoverItemClass;
+
+	UPROPERTY()
+	TObjectPtr<UInv_HoverItem> HoverItem;
 	
 	UPROPERTY(EditAnywhere, Category = "Inventory")
 	int32 Rows;
