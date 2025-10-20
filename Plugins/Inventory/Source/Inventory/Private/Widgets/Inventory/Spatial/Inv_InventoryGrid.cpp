@@ -16,6 +16,7 @@
 #include "Widgets/Inventory/HoverItem/Inv_HoverItem.h"
 #include "Widgets/Utils/Inv_WidgetUtils.h"
 #include "Widgets/Inventory/SlottedItems/Inv_SlottedItem.h"
+#include "Widgets/Inventory/HoverItem/Inv_HoverItem.h"
 
 void UInv_InventoryGrid::NativeOnInitialized()
 {
@@ -276,15 +277,16 @@ void UInv_InventoryGrid::AddStacks(const FInv_SlotAvailabilityResult& Result)
 	}
 }
 
-void UInv_InventoryGrid::OnSlottedItemClicked(int32 Index, const FPointerEvent& MouseEvent)
+void UInv_InventoryGrid::OnSlottedItemClicked(int32 GrideIndex, const FPointerEvent& MouseEvent)
 {
-	check(GridSlots.IsValidIndex(Index));
-	UInv_InventoryItem* Item = GridSlots[Index]->GetInventoryItem().Get();
+	check(GridSlots.IsValidIndex(GrideIndex));
+	UInv_InventoryItem* ClickedInventoryItem = GridSlots[GrideIndex]->GetInventoryItem().Get();
 
 	if (!IsValid(HoverItem) && IsLeftClick(MouseEvent))
 	{
-		
-	}else if (IsValid(HoverItem) && IsRightClick(MouseEvent))
+		PickUp(ClickedInventoryItem, GrideIndex);
+	}
+	else if (IsValid(HoverItem) && IsRightClick(MouseEvent))
 	{
 		
 	}
@@ -298,6 +300,37 @@ bool UInv_InventoryGrid::IsRightClick(const FPointerEvent& MouseEvent) const
 bool UInv_InventoryGrid::IsLeftClick(const FPointerEvent& MouseEvent) const
 {
 	return MouseEvent.GetEffectingButton() == EKeys::LeftMouseButton;
+}
+
+void UInv_InventoryGrid::PickUp(UInv_InventoryItem* ClickedInventoryItem, const int32 GridIndex)
+{
+	AssignHoverItem(ClickedInventoryItem);
+}
+
+void UInv_InventoryGrid::AssignHoverItem(UInv_InventoryItem* InventoryItem)
+{
+	if (!IsValid(HoverItem))
+	{
+		HoverItem = CreateWidget<UInv_HoverItem>(GetOwningPlayer(), HoverItemClass);
+	}
+
+	const FInv_GridFragment* GridFragment = GetFragment<FInv_GridFragment>(InventoryItem, FragmentTags::GridFragment);
+	const FInv_ImageFragment* ImageFragment = GetFragment<FInv_ImageFragment>(InventoryItem, FragmentTags::IconFragment);
+	if (!GridFragment || !ImageFragment) return;
+
+	const FVector2D DrawSize = GetDrawSize(GridFragment);
+
+	FSlateBrush IconBrush;
+	IconBrush.SetResourceObject(ImageFragment->GetIcon());
+	IconBrush.DrawAs = ESlateBrushDrawType::Image;
+	IconBrush.ImageSize = DrawSize * UWidgetLayoutLibrary::GetViewportScale(this);
+
+	HoverItem->SetImageBrush(IconBrush);
+	HoverItem->SetGridDimensions(GridFragment->GetGridSize());
+	HoverItem->SetInventoryItem(InventoryItem);
+	HoverItem->SetIsStackable(InventoryItem->IsStackable());
+
+	GetOwningPlayer()->SetMouseCursorWidget(EMouseCursor::Default, HoverItem);
 }
 
 FVector2D UInv_InventoryGrid::GetDrawSize(const FInv_GridFragment* GridFragment) const
@@ -345,5 +378,3 @@ bool UInv_InventoryGrid::MatchesCategory(const UInv_InventoryItem* Item) const
 {
 	return Item->GetItemManifest().GetItemCategory() == ItemCategory;
 }
-
-

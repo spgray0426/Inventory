@@ -80,11 +80,12 @@ private:
 	void AddStacks(const FInv_SlotAvailabilityResult& Result);
 
 	UFUNCTION()
-	void OnSlottedItemClicked(int32 Index, const FPointerEvent& MouseEvent);
+	void OnSlottedItemClicked(int32 GrideIndex, const FPointerEvent& MouseEvent);
 
 	bool IsRightClick(const FPointerEvent& MouseEvent) const;
 	bool IsLeftClick(const FPointerEvent& MouseEvent) const;
-	
+	void PickUp(UInv_InventoryItem* ClickedInventoryItem, const int32 GridIndex);
+	void AssignHoverItem(UInv_InventoryItem* InventoryItem);
 	TWeakObjectPtr<UInv_InventoryComponent> InventoryComponent;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Inventory", meta=(AllowPrivateAccess = "true"))
@@ -120,3 +121,5 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Inventory")
 	float TileSize;
 };
+
+
