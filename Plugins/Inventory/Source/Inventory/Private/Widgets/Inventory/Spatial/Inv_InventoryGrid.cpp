@@ -350,6 +350,18 @@ void UInv_InventoryGrid::RemoveItemFromGrid(UInv_InventoryItem* InventoryItem, c
 
 void UInv_InventoryGrid::UpdateTileParameters(const FVector2D& CanvasPosition, const FVector2D& MousePosition)
 {
+	const FIntPoint HoveredTileCoordinates = CalculateHoveredCoordinates(CanvasPosition, MousePosition);
+	LastTileParameters = TileParameters;
+	TileParameters.TileCoordinats = HoveredTileCoordinates;
+	TileParameters.TileIndex = UInv_WidgetUtils::GetIndexFromPosition(HoveredTileCoordinates, Columns);
+}
+
+FIntPoint UInv_InventoryGrid::CalculateHoveredCoordinates(const FVector2D& CanvasPosition, const FVector2D& MousePosition)
+{
+	return FIntPoint{
+ 		static_cast<int32>(FMath::FloorToInt((MousePosition.X - CanvasPosition.X / TileSize))),
+ 		static_cast<int32>(FMath::FloorToInt((MousePosition.Y - CanvasPosition.Y / TileSize)))
+ 	};
 }
 
 void UInv_InventoryGrid::AssignHoverItem(UInv_InventoryItem* InventoryItem)

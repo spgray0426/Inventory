@@ -15,9 +15,19 @@ class INVENTORY_API UInv_WidgetUtils : public UBlueprintFunctionLibrary
 	GENERATED_BODY()
 
 public:
+	// 위젯의 뷰포트상 위치를 반환하는 함수 (블루프린트에서도 호출 가능)
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	static FVector2D GetWidgetPosition(UWidget* Widget);
 	
+	// 2D 좌표(Position)를 1D 인덱스로 변환하는 함수
+	// @param Position - 변환할 2D 좌표 (x,y)
+	// @param Columns - 그리드의 열 수
+	// @return - 1차원 배열에서의 인덱스 값
 	static int32 GetIndexFromPosition(const FIntPoint& Position, const int32 Columns);
+
+	// 1D 인덱스를 2D 좌표로 변환하는 함수
+	// @param Index - 변환할 1차원 배열 인덱스
+	// @param Columns - 그리드의 열 수
+	// @return - 2D 좌표 (x,y)
 	static FIntPoint GetPositionFromIndex(const int32 Index, const int32 Columns);
 };
