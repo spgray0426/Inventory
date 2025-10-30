@@ -9,6 +9,7 @@
 #include "Widgets/Inventory/SlottedItems/Inv_SlottedItem.h"
 #include "Inv_InventoryGrid.generated.h"
 
+enum class EInv_GridSlotState : uint8;
 class UInv_HoverItem;
 struct FInv_ImageFragment;
 struct FInv_GridFragment;
@@ -102,6 +103,7 @@ private:
 
 	void HighlightSlots(const int32 Index, const FIntPoint& Dimensions);
 	void UnHighlightSlots(const int32 Index, const FIntPoint& Dimensions);
+	void ChangeHoverType(const int32 Index, const FIntPoint& Dimensions, EInv_GridSlotState GridSlotState);
 	
 	TWeakObjectPtr<UInv_InventoryComponent> InventoryComponent;
 	
