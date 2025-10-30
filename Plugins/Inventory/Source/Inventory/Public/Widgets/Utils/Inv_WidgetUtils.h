@@ -18,6 +18,18 @@ public:
 	// 위젯의 뷰포트상 위치를 반환하는 함수 (블루프린트에서도 호출 가능)
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	static FVector2D GetWidgetPosition(UWidget* Widget);
+
+	// 위젯의 크기를 가져오는 함수 (블루프린트에서도 호출 가능) 
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	static FVector2D GetWidgetSize(UWidget* Widget);
+	
+	// 특정 위치가 경계 영역 내에 있는지 확인하는 함수 (블루프린트에서도 호출 가능)
+	// @param BoundaryPos - 경계 영역의 시작 위치
+	// @param WidgetSize - 경계 영역의 크기
+	// @param MousePos - 확인할 마우스 위치
+	// @return - 마우스가 경계 영역 내에 있으면 true, 아니면 false 반환
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	static bool IsWithinBounds(const FVector2D& BoundaryPos, const FVector2D& WidgetSize, const FVector2D& MousePos);
 	
 	// 2D 좌표(Position)를 1D 인덱스로 변환하는 함수
 	// @param Position - 변환할 2D 좌표 (x,y)
