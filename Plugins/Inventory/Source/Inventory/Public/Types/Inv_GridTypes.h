@@ -82,3 +82,18 @@ inline bool operator==(const FInv_TileParameters& A, const FInv_TileParameters& 
 {
 	return A.TileCoordinats == B.TileCoordinats && A.TileIndex == B.TileIndex && A.TileQuadrant == B.TileQuadrant;
 }
+
+USTRUCT()
+struct FInv_SpaceQueryResult
+{
+	GENERATED_BODY()
+
+	// 쿼리된 공간에 항목이 없는 경우 True
+	bool bHasSpace{false};
+
+	// 교환할 수 있는 단일 항목이 있는 경우 유효합니다.
+	TWeakObjectPtr<UInv_InventoryItem> ValidItem = nullptr;
+
+	// 유효한 항목의 왼쪽 위 인덱스(있는 경우)
+	int32 UpperLeftIndex{INDEX_NONE};
+};
