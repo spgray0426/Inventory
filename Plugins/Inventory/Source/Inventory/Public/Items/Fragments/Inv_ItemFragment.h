@@ -5,77 +5,158 @@
 
 #include "Inv_ItemFragment.generated.h"
 
+/**
+ * 아이템 컴포지션 시스템의 기본 프래그먼트 구조체
+ * 아이템은 여러 프래그먼트로 구성되며, 각 프래그먼트는 특정 동작이나 속성을 정의합니다
+ * 프래그먼트는 GameplayTag로 식별되어 타입 안전한 검색이 가능합니다
+ */
 USTRUCT(BlueprintType)
 struct FInv_ItemFragment
 {
 	GENERATED_BODY()
 
+	/** 기본 생성자 */
 	FInv_ItemFragment() {};
+
+	/** 복사 생성자 */
 	FInv_ItemFragment(const FInv_ItemFragment& Other) = default;
+
+	/** 복사 대입 연산자 */
 	FInv_ItemFragment& operator=(const FInv_ItemFragment& Other) = default;
+
+	/** 이동 생성자 */
 	FInv_ItemFragment(FInv_ItemFragment&&) = default;
+
+	/** 이동 대입 연산자 */
 	FInv_ItemFragment& operator=(FInv_ItemFragment&&) = default;
+
+	/** 다형성 정리를 위한 가상 소멸자 */
 	virtual ~FInv_ItemFragment() {};
 
+	/**
+	 * 이 프래그먼트 타입을 식별하는 GameplayTag를 가져옵니다
+	 * @return 프래그먼트를 식별하는 GameplayTag
+	 */
 	FGameplayTag GetFragmentTag() const { return FrgmentTag; }
+
+	/**
+	 * 이 프래그먼트 타입을 식별하는 GameplayTag를 설정합니다
+	 * @param Tag 이 프래그먼트에 할당할 GameplayTag
+	 */
 	void SetFragmentTag(FGameplayTag Tag) { FrgmentTag = Tag; }
-	
+
 private:
 
+	/** 이 프래그먼트 타입을 고유하게 식별하는 GameplayTag */
 	UPROPERTY(EditAnywhere, Category = "Inventory")
 	FGameplayTag FrgmentTag = FGameplayTag::EmptyTag;
 };
 
+/**
+ * 그리드 기반 인벤토리의 공간 차원을 정의하는 그리드 프래그먼트
+ * 아이템이 차지하는 그리드 셀의 개수(너비 x 높이)와 패딩을 지정합니다
+ */
 USTRUCT(BlueprintType)
 struct FInv_GridFragment : public FInv_ItemFragment
 {
 	GENERATED_BODY()
 
+	/**
+	 * 이 아이템의 그리드 크기를 가져옵니다
+	 * @return 그리드 셀 단위의 너비(X)와 높이(Y)를 담은 FIntPoint
+	 */
 	FIntPoint GetGridSize() const { return GridSize; }
+
+	/**
+	 * 이 아이템의 그리드 크기를 설정합니다
+	 * @param Size 그리드 크기 (X = 너비, Y = 높이, 셀 단위)
+	 */
 	void SetGridSize(const FIntPoint& Size) { GridSize = Size; }
+
+	/**
+	 * 그리드에서 아이템 주변의 패딩을 가져옵니다
+	 * @return 픽셀 단위의 패딩 값
+	 */
 	float GetGridPadding() const { return GridPadding; }
+
+	/**
+	 * 그리드에서 아이템 주변의 패딩을 설정합니다
+	 * @param Padding 픽셀 단위의 패딩 값
+	 */
 	void SetGridPadding(float Padding) { GridPadding = Padding; }
-	
+
 private:
 
+	/** 그리드 셀 단위의 아이템 크기 (X = 너비, Y = 높이). 기본값은 1x1 */
 	UPROPERTY(EditAnywhere, Category = "Inventory")
 	FIntPoint GridSize {1, 1};
 
+	/** 픽셀 단위의 아이템 주변 패딩. 기본값은 0 */
 	UPROPERTY(EditAnywhere, Category = "Inventory")
 	float GridPadding {0.f};
-	
+
 };
 
+/**
+ * 아이템의 시각적 표현을 정의하는 이미지 프래그먼트
+ * 아이콘 텍스처와 표시 크기를 포함합니다
+ */
 USTRUCT(BlueprintType)
 struct FInv_ImageFragment : public FInv_ItemFragment
 {
 	GENERATED_BODY()
 
+	/**
+	 * 이 아이템의 아이콘 텍스처를 가져옵니다
+	 * @return 아이템 아이콘으로 사용되는 2D 텍스처 포인터
+	 */
 	UTexture2D* GetIcon() const { return Icon; }
-	
+
 private:
 
+	/** 인벤토리 UI에서 아이템 아이콘으로 사용되는 2D 텍스처 */
 	UPROPERTY(EditAnywhere, Category = "Inventory")
 	TObjectPtr<UTexture2D> Icon {nullptr};
 
+	/** 픽셀 단위의 아이콘 표시 크기. 기본값은 44x44 */
 	UPROPERTY(EditAnywhere, Category = "Inventory")
 	FVector2D IconDimensions {44.f, 44.f};
 };
 
+/**
+ * 아이템의 스택 기능을 활성화하는 스택 가능 프래그먼트
+ * 최대 스택 크기를 정의하고 현재 스택 개수를 추적합니다
+ */
 USTRUCT(BlueprintType)
 struct FInv_StackableFragment : public FInv_ItemFragment
 {
 	GENERATED_BODY()
 
+	/**
+	 * 함께 스택할 수 있는 아이템의 최대 개수를 가져옵니다
+	 * @return 최대 스택 크기
+	 */
 	int32 GetMaxStackSize() const { return MaxStackSize; }
+
+	/**
+	 * 이 스택의 현재 아이템 개수를 가져옵니다
+	 * @return 현재 스택 개수
+	 */
 	int32 GetStackCount() const { return StackCount; }
+
+	/**
+	 * 이 스택의 현재 아이템 개수를 설정합니다
+	 * @param Count 새로운 스택 개수 (MaxStackSize를 초과하지 않아야 함)
+	 */
 	void SetStackCount(int32 Count) { StackCount = Count; }
-	
+
 private:
 
+	/** 함께 스택할 수 있는 아이템의 최대 개수. 기본값은 1 (스택 불가) */
 	UPROPERTY(EditAnywhere, Category = "Inventory")
 	int32 MaxStackSize {1};
 
+	/** 이 스택의 현재 아이템 개수. 기본값은 1 */
 	UPROPERTY(EditAnywhere, Category = "Inventory")
 	int32 StackCount{1};
 };

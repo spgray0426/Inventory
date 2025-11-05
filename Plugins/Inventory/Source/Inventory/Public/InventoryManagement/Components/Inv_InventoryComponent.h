@@ -12,57 +12,122 @@ struct FInv_SlotAvailabilityResult;
 class UInv_ItemComponent;
 class UInv_InventoryBase;
 
+/** 인벤토리 아이템이 추가되거나 제거될 때 호출되는 델리게이트 */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FInventoryItemChange, UInv_InventoryItem*, Item);
+
+/** 인벤토리에 공간이 부족할 때 호출되는 델리게이트 */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FNoRoomInInventory);
+
+/** 스택 수량이 변경될 때 호출되는 델리게이트 */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FStackChange, const FInv_SlotAvailabilityResult&, Result);
 
+/**
+ * 인벤토리 관리를 담당하는 액터 컴포넌트
+ * 서버 권한 기반의 인벤토리 연산을 처리하며, Fast Array를 통해 인벤토리 상태를 복제합니다
+ * 아이템 추가/제거, 메뉴 토글 등의 기능을 제공합니다
+ */
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent), blueprintable)
 class INVENTORY_API UInv_InventoryComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
 public:
+	/** 기본 생성자 */
 	UInv_InventoryComponent();
 
+	/**
+	 * 네트워크 복제를 위한 속성들을 등록합니다
+	 * @param OutLifetimeProps 복제 속성을 저장할 배열
+	 */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-	
+
+	/**
+	 * 아이템을 인벤토리에 추가하려고 시도합니다 (블루프린트에서 호출 가능, 서버에서만)
+	 * @param ItemComponent 추가할 아이템 컴포넌트
+	 */
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Inventory")
 	void TryAddItem(UInv_ItemComponent* ItemComponent);
 
+	/**
+	 * 서버 RPC: 새로운 아이템을 인벤토리에 추가합니다
+	 * @param ItemComponent 추가할 아이템 컴포넌트
+	 * @param StackCount 추가할 스택 수량
+	 */
 	UFUNCTION(Server, Reliable)
 	void Server_AddNewItem(UInv_ItemComponent* ItemComponent, int32 StackCount);
 
+	/**
+	 * 서버 RPC: 기존 아이템에 스택을 추가합니다
+	 * @param ItemComponent 스택을 추가할 아이템 컴포넌트
+	 * @param StackCount 추가할 스택 수량
+	 * @param Remainder 남은 수량 (추가할 수 없는 수량)
+	 */
 	UFUNCTION(Server, Reliable)
 	void Server_AddStacksToItem(UInv_ItemComponent* ItemComponent, int32 StackCount, int32 Remainder);
-	
+
+	/**
+	 * 인벤토리 메뉴를 열거나 닫습니다
+	 */
 	void ToggleInventoryMenu();
+
+	/**
+	 * 복제 서브 객체를 추가합니다
+	 * @param SubObj 추가할 서브 객체
+	 */
 	void AddRepSubObj(UObject* SubObj);
-	
+
+	/** 아이템이 추가될 때 호출되는 델리게이트 */
 	FInventoryItemChange OnItemAdded;
+
+	/** 아이템이 제거될 때 호출되는 델리게이트 */
 	FInventoryItemChange OnItemRemoved;
+
+	/** 인벤토리에 공간이 부족할 때 호출되는 델리게이트 */
 	FNoRoomInInventory NoRoomInInventory;
+
+	/** 스택 수량이 변경될 때 호출되는 델리게이트 */
 	FStackChange OnStackChange;
 	
 protected:
+	/**
+	 * 플레이 시작 시 호출됩니다
+	 * 인벤토리를 초기화합니다
+	 */
 	virtual void BeginPlay() override;
 
 private:
+	/**
+	 * 인벤토리를 구성합니다
+	 * 인벤토리 메뉴 위젯을 생성하고 초기화합니다
+	 */
 	void ConstructInventory();
 
+	/**
+	 * 인벤토리 메뉴를 엽니다
+	 */
 	void OpenInventoryMenu();
+
+	/**
+	 * 인벤토리 메뉴를 닫습니다
+	 */
 	void CloseInventoryMenu();
-	
+
+	/** 이 컴포넌트를 소유하는 플레이어 컨트롤러의 약한 참조 */
 	TWeakObjectPtr<APlayerController> OwningController;
 
+	/** 인벤토리 아이템 목록 (네트워크로 복제됨) */
 	UPROPERTY(Replicated)
 	FInv_InventoryFastArray InventoryList;
-	
+
+	/** 인벤토리 메뉴 위젯 인스턴스 */
 	UPROPERTY()
 	TObjectPtr<UInv_InventoryBase> InventoryMenu;
-	
+
+	/** 인벤토리 메뉴 위젯 클래스 */
 	UPROPERTY(EditAnywhere, Category = "Inventory")
 	TSubclassOf<UInv_InventoryBase> InventoryMenuClass;
 
+	/** 인벤토리 메뉴가 열려있는지 여부 */
 	bool bInventoryMenuOpen;
-	
+
 };
