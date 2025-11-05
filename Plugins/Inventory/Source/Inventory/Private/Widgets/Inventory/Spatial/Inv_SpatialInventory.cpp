@@ -20,6 +20,12 @@ void UInv_SpatialInventory::NativeOnInitialized()
 	ShowEquippables();
 }
 
+/**
+ * 주어진 아이템 컴포넌트가 인벤토리에 들어갈 공간이 있는지 확인합니다.
+ *
+ * @param ItemComponent 공간을 확인할 대상 아이템 컴포넌트입니다.
+ * @return 인벤토리에 아이템을 넣을 수 있는지에 대한 결과를 반환합니다. 결과에는 사용 가능한 슬롯 정보, 남은 아이템 수량 등이 포함됩니다.
+ */
 FInv_SlotAvailabilityResult UInv_SpatialInventory::HasRoomForItem(UInv_ItemComponent* ItemComponent) const
 {
 	switch (UInv_InventoryStatics::GetItemCategoryFromItemComp(ItemComponent)) {

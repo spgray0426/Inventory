@@ -45,6 +45,12 @@ void UInv_InventoryGrid::NativeTick(const FGeometry& MyGeometry, float InDeltaTi
 	UpdateTileParameters(CanvasPosition, MousePosition);
 }
 
+/**
+ * 주어진 아이템 컴포넌트를 기준으로, 해당 아이템이 인벤토리 그리드 내에 배치될 수 있는지 확인합니다.
+ *
+ * @param ItemComponent 확인할 UInv_ItemComponent 객체로, 배치 가능 여부를 판단할 아이템의 정보를 포함합니다.
+ * @return FInv_SlotAvailabilityResult 구조체로, 아이템이 배치 가능하다면 관련 슬롯 정보를 포함하며, 불가능하다면 적절한 상태를 반환합니다.
+ */
 FInv_SlotAvailabilityResult UInv_InventoryGrid::HasRoomForItem(const UInv_ItemComponent* ItemComponent)
 {
 	return HasRoomForItem(ItemComponent->GetItemManifest());
@@ -66,28 +72,35 @@ FInv_SlotAvailabilityResult UInv_InventoryGrid::HasRoomForItem(const FInv_ItemMa
 	//추가할 스택 수를 결정합니다.
 	const int32 MaxStackSize = StackableFragment ? StackableFragment->GetMaxStackSize() : 1;
 	int32 AmountToFill = StackableFragment ? StackableFragment->GetStackCount() : 1;
-
+	
 	TSet<int32> CheckedIndices;
 	
 	for (const auto& GridSlot : GridSlots)
 	{
+		// 모든 수량이 채워졌다면 종료
 		if (AmountToFill == 0 ) break;
 
+		// 이미 검사한 슬롯이면 건너뜀
 		if (IsIndexClaimed(CheckedIndices, GridSlot->GetIndex())) continue;
 
+		// 그리드 범위를 벗어나면 건너뜀
 		if (!IsInGridBounds(GridSlot->GetIndex(), GetItemDimensions(Manifest))) continue;
 		
+		// 해당 위치에 아이템을 놓을 수 있는지 확인
 		TSet<int32> TentativelyClaimed;
 		if (!HasRoomAtIndex(GridSlot, GetItemDimensions(Manifest), CheckedIndices, TentativelyClaimed, Manifest.GetItemType(), MaxStackSize))
 		{
 			continue;
 		}
 
+		// 슬롯에 채울 수 있는 수량을 계산
 		const int32 AmountToFillInSlot = DetermineFillAmountForSlot(Result.bStackable, MaxStackSize, AmountToFill, GridSlot);
 		if (AmountToFillInSlot == 0) continue;
 
+		// 임시로 점유한 슬롯들을 실제로 점유
 		CheckedIndices.Append(TentativelyClaimed);
 
+		// 결과 정보 갱신
 		Result.TotalRoomToFill += AmountToFillInSlot;
 		Result.SlotAvailabilities.Emplace(
 			FInv_SlotAvailability{
@@ -97,9 +110,8 @@ FInv_SlotAvailabilityResult UInv_InventoryGrid::HasRoomForItem(const FInv_ItemMa
 			}
 		);
 
+		// 남은 수량 갱신
 		AmountToFill -= AmountToFillInSlot;
-
-		// How much is the Remainder?
 		Result.Remainder = AmountToFill;
 
 		if (AmountToFill == 0) return Result;
@@ -312,6 +324,32 @@ void UInv_InventoryGrid::OnSlottedItemClicked(int32 GrideIndex, const FPointerEv
 	else if (IsValid(HoverItem) && IsRightClick(MouseEvent))
 	{
 		
+	}
+}
+
+void UInv_InventoryGrid::OnGridSlotClicked(int32 GridIndex, const FPointerEvent& MouseEvent)
+{
+}
+
+void UInv_InventoryGrid::OnGridSlotHovered(int32 GridIndex, const FPointerEvent& MouseEvent)
+{
+	if (IsValid(HoverItem)) return;
+
+	UInv_GridSlot* GridSlot = GridSlots[GridIndex];
+	if (GridSlot->IsAvailable())
+	{
+		GridSlot->SetOccupiedTexture();
+	}
+}
+
+void UInv_InventoryGrid::OnGridSlotUnhovered(int32 GridIndex, const FPointerEvent& MouseEvent)
+{
+	if (IsValid(HoverItem)) return;
+
+	UInv_GridSlot* GridSlot = GridSlots[GridIndex];
+	if (GridSlot->IsAvailable())
+	{
+		GridSlot->SetUnoccupiedTexture();
 	}
 }
 
@@ -619,6 +657,9 @@ void UInv_InventoryGrid::ConstructGrid()
 			GridCPS->SetPosition(TilePosition * TileSize);
 
 			GridSlots.Add(GridSlot);
+			GridSlot->GridSlotClicked.AddDynamic(this, &ThisClass::OnGridSlotClicked);
+			GridSlot->GridSlotHovered.AddDynamic(this, &ThisClass::OnGridSlotHovered);
+			GridSlot->GridSlotUnhovered.AddDynamic(this, &ThisClass::OnGridSlotUnhovered);
 		}
 	}
 }

@@ -9,6 +9,8 @@
 class UInv_InventoryItem;
 class UImage;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FGridSlotEvent, int32, GridIndex, const FPointerEvent&, MouseEvent);
+
 UENUM(BlueprintType)
 enum class EInv_GridSlotState : uint8
 {
@@ -24,6 +26,15 @@ class INVENTORY_API UInv_GridSlot : public UUserWidget
 	GENERATED_BODY()
 
 public:
+	// 마우스가 슬롯에 들어갈 때 호출되는 함수
+	virtual void NativeOnMouseEnter(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
+
+	// 마우스가 슬롯에서 나갈 때 호출되는 함수
+	virtual void NativeOnMouseLeave(const FPointerEvent& MouseEvent) override;
+
+	// 마우스 버튼이 슬롯 위에서 눌렸을 때 호출되는 함수
+	virtual FReply NativeOnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
+	
 	void SetTileIndex(int32 Index) { TileIndex = Index; }
 	int32 GetTileIndex() const { return TileIndex; }
 	EInv_GridSlotState GetGridSlotState() const { return GridSlotState; }
@@ -42,6 +53,10 @@ public:
 	void SetUnoccupiedTexture();
 	void SetSelectedTexture();
 	void SetGrayedOutTexture();
+
+	FGridSlotEvent GridSlotClicked;
+	FGridSlotEvent GridSlotHovered;
+	FGridSlotEvent GridSlotUnhovered;
 private:
 	
 	int32 TileIndex{INDEX_NONE};
