@@ -233,6 +233,22 @@ void UInv_InventoryGrid::AddItem(UInv_InventoryItem* Item)
 	AddItemToIndices(Result, Item);
 }
 
+void UInv_InventoryGrid::ShowCursor()
+{
+	// 플레이어 컨트롤러가 유효하지 않으면 무시
+	if (!IsValid(GetOwningPlayer())) return;
+	// 표시 가능한 커서 위젯을 마우스 커서로 설정합니다
+	GetOwningPlayer()->SetMouseCursorWidget(EMouseCursor::Default, GetVisibleCursorWidget());
+}
+
+void UInv_InventoryGrid::HideCursor()
+{
+	// 플레이어 컨트롤러가 유효하지 않으면 무시
+	if (!IsValid(GetOwningPlayer())) return;
+	// 숨겨진 커서 위젯을 마우스 커서로 설정하여 커서를 보이지 않게 합니다
+	GetOwningPlayer()->SetMouseCursorWidget(EMouseCursor::Default, GetHiddenCursorWidget());
+}
+
 void UInv_InventoryGrid::AddItemToIndices(const FInv_SlotAvailabilityResult& Result, UInv_InventoryItem* NewItem)
 {
 	// 사용 가능한 모든 슬롯에 아이템을 추가하고 업데이트합니다
@@ -688,6 +704,33 @@ void UInv_InventoryGrid::ClearHoverItem()
 	// 호버 아이템을 제거합니다
 	HoverItem->RemoveFromParent();
 	HoverItem = nullptr;
+
+	// 커서를 다시 표시합니다
+	ShowCursor();
+}
+
+UUserWidget* UInv_InventoryGrid::GetVisibleCursorWidget()
+{
+	// 플레이어 컨트롤러가 유효하지 않으면 nullptr 반환
+	if (!IsValid(GetOwningPlayer())) return nullptr;
+	// 위젯이 생성되지 않았다면 생성합니다
+	if (!IsValid(VisibleCursorWidget))
+	{
+		VisibleCursorWidget = CreateWidget<UUserWidget>(GetOwningPlayer(), VisibleCursorWidgetClass);
+	}
+	return VisibleCursorWidget;
+}
+
+UUserWidget* UInv_InventoryGrid::GetHiddenCursorWidget()
+{
+	// 플레이어 컨트롤러가 유효하지 않으면 nullptr 반환
+	if (!IsValid(GetOwningPlayer())) return nullptr;
+	// 위젯이 생성되지 않았다면 생성합니다
+	if (!IsValid(HiddenCursorWidget))
+	{
+		HiddenCursorWidget = CreateWidget<UUserWidget>(GetOwningPlayer(), HiddenCursorWidgetClass);
+	}
+	return HiddenCursorWidget;
 }
 
 void UInv_InventoryGrid::AssignHoverItem(UInv_InventoryItem* InventoryItem)

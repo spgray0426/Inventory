@@ -66,6 +66,17 @@ public:
 	UFUNCTION()
 	void AddItem(UInv_InventoryItem* Item);
 
+	/**
+	 * 마우스 커서를 보이게 설정합니다
+	 * VisibleCursorWidget을 마우스 커서로 설정합니다
+	 */
+	void ShowCursor();
+
+	/**
+	 * 마우스 커서를 숨깁니다
+	 * HiddenCursorWidget을 마우스 커서로 설정하여 커서를 보이지 않게 합니다
+	 */
+	void HideCursor();
 private:
 
 	/**
@@ -425,6 +436,20 @@ private:
 	 */
 	void ClearHoverItem();
 
+	/**
+	 * 표시 가능한 커서 위젯을 가져옵니다
+	 * 위젯이 생성되지 않았다면 생성합니다
+	 * @return 표시 가능한 커서 위젯
+	 */
+	UUserWidget* GetVisibleCursorWidget();
+
+	/**
+	 * 숨겨진 커서 위젯을 가져옵니다
+	 * 위젯이 생성되지 않았다면 생성합니다
+	 * @return 숨겨진 커서 위젯
+	 */
+	UUserWidget* GetHiddenCursorWidget();
+
 	/** 인벤토리 컴포넌트에 대한 약한 참조 */
 	TWeakObjectPtr<UInv_InventoryComponent> InventoryComponent;
 
@@ -483,6 +508,22 @@ private:
 
 	/** 마지막으로 하이라이트된 차원 */
 	FIntPoint LastHighlightedDimensions;
+
+	/** 표시 가능한 커서 위젯의 클래스 */
+	UPROPERTY(EditAnywhere, Category = "Inventory")
+	TSubclassOf<UUserWidget> VisibleCursorWidgetClass;
+
+	/** 숨겨진 커서 위젯의 클래스 */
+	UPROPERTY(EditAnywhere, Category = "Inventory")
+	TSubclassOf<UUserWidget> HiddenCursorWidgetClass;
+
+	/** 생성된 표시 가능한 커서 위젯 인스턴스 */
+	UPROPERTY()
+	TObjectPtr<UUserWidget> VisibleCursorWidget;
+
+	/** 생성된 숨겨진 커서 위젯 인스턴스 */
+	UPROPERTY()
+	TObjectPtr<UUserWidget> HiddenCursorWidget;
 
 	/** 그리드의 행 수 */
 	UPROPERTY(EditAnywhere, Category = "Inventory")

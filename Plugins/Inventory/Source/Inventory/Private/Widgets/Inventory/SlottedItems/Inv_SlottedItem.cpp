@@ -8,27 +8,32 @@
 
 FReply UInv_SlottedItem::NativeOnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
 {
+	// 슬롯 아이템 클릭 이벤트를 브로드캐스트합니다
 	OnSlottedItemClicked.Broadcast(GridIndex, MouseEvent);
 	return FReply::Handled();
 }
 
 void UInv_SlottedItem::SetInventoryItem(UInv_InventoryItem* Item)
 {
+	// 인벤토리 아이템에 대한 약한 참조를 설정합니다
 	InventoryItem = Item;
 }
 
 void UInv_SlottedItem::SetImageBrush(const FSlateBrush& Brush) const
 {
+	// 아이콘 이미지의 브러시를 설정합니다
 	Image_Icon->SetBrush(Brush);
 }
 
 void UInv_SlottedItem::UpdateStackCount(int32 StackCount)
 {
+	// 스택 개수가 0보다 크면 텍스트를 표시합니다
 	if (StackCount > 0)
 	{
 		Text_StackCount->SetVisibility(ESlateVisibility::Visible);
 		Text_StackCount->SetText(FText::AsNumber(StackCount));
 	}
+	// 스택 개수가 0이면 텍스트를 숨깁니다
 	else
 	{
 		Text_StackCount->SetVisibility(ESlateVisibility::Collapsed);
