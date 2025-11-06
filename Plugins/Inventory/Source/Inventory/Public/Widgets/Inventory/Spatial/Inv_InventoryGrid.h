@@ -276,11 +276,11 @@ private:
 
 	/**
 	 * 슬롯에 배치된 아이템이 클릭되었을 때 호출됩니다
-	 * @param GrideIndex 그리드 인덱스
+	 * @param GridIndex 그리드 인덱스
 	 * @param MouseEvent 마우스 이벤트
 	 */
 	UFUNCTION()
-	void OnSlottedItemClicked(int32 GrideIndex, const FPointerEvent& MouseEvent);
+	void OnSlottedItemClicked(int32 GridIndex, const FPointerEvent& MouseEvent);
 
 	/**
 	 * 그리드 슬롯이 클릭되었을 때 호출됩니다
@@ -373,7 +373,8 @@ private:
 
 	/**
 	 * 타일 파라미터가 업데이트되었을 때 호출됩니다
-	 * @param Parameters 업데이트된 타일 파라미터
+	 * 호버 아이템의 배치 가능 여부를 확인하고 해당 위치의 슬롯들을 하이라이트합니다
+	 * @param Parameters 업데이트된 타일 파라미터 (좌표, 인덱스, 사분면 포함)
 	 */
 	void OnTileParametersUpdated(const FInv_TileParameters& Parameters);
 
@@ -450,6 +451,69 @@ private:
 	 */
 	UUserWidget* GetHiddenCursorWidget();
 
+	/**
+	 * 클릭한 아이템이 호버 아이템과 같은 종류의 스택 가능 아이템인지 확인합니다
+	 * @param ClickedInventoryItem 클릭한 인벤토리 아이템
+	 * @return 같은 종류의 스택 가능 아이템인 경우 true
+	 */
+	bool IsSameStackable(const UInv_InventoryItem* ClickedInventoryItem) const;
+
+	/**
+	 * 호버 아이템과 클릭한 아이템의 위치를 교환합니다
+	 * @param ClickedInventoryItem 클릭한 인벤토리 아이템
+	 * @param GridIndex 클릭한 그리드 인덱스
+	 */
+	void SwapWithHoverItem(UInv_InventoryItem* ClickedInventoryItem, const int32 GridIndex);
+
+	/**
+	 * 스택 수량을 교환해야 하는지 판단합니다
+	 * @param RoomInClickedSlot 클릭한 슬롯의 남은 공간
+	 * @param HoveredStackCount 호버 아이템의 스택 수량
+	 * @param MaxStackSize 최대 스택 크기
+	 * @return 교환해야 하는 경우 true (클릭한 슬롯이 가득 찼고 호버 아이템이 최대 스택 미만인 경우)
+	 */
+	bool ShouldSwapStackCounts(const int32 RoomInClickedSlot, const int32 HoveredStackCount, const int32 MaxStackSize) const;
+
+	/**
+	 * 클릭한 슬롯과 호버 아이템의 스택 수량을 교환합니다
+	 * @param ClickedStackCount 클릭한 슬롯의 스택 수량
+	 * @param HoveredStackCount 호버 아이템의 스택 수량
+	 * @param Index 그리드 인덱스
+	 */
+	void SwapStackCounts(const int32 ClickedStackCount, const int32 HoveredStackCount, const int32 Index);
+
+	/**
+	 * 호버 아이템의 모든 스택을 클릭한 슬롯에 소비할 수 있는지 확인합니다
+	 * @param HoveredStackCount 호버 아이템의 스택 수량
+	 * @param RoomInClickedSlot 클릭한 슬롯의 남은 공간
+	 * @return 클릭한 슬롯에 호버 아이템의 전체 스택을 담을 수 있는 경우 true (예: 호버 20개, 슬롯 공간 30개 남음)
+	 */
+	bool ShouldConsumeHoverItemStacks(const int32 HoveredStackCount, const int32 RoomInClickedSlot) const;
+
+	/**
+	 * 호버 아이템의 모든 스택을 클릭한 슬롯에 소비하고 호버 아이템을 제거합니다
+	 * @param ClickedStackCount 클릭한 슬롯의 현재 스택 수량
+	 * @param HoveredStackCount 호버 아이템의 스택 수량
+	 * @param Index 클릭한 그리드 인덱스
+	 */
+	void ConsumeHoverItemStacks(const int32 ClickedStackCount, const int32 HoveredStackCount, const int32 Index);
+
+	/**
+	 * 클릭한 슬롯을 부분적으로 채워야 하는지 확인합니다
+	 * @param RoomInClickedSlot 클릭한 슬롯의 남은 공간
+	 * @param HoveredStackCount 호버 아이템의 스택 수량
+	 * @return 클릭한 슬롯이 호버 아이템의 일부만 담을 수 있는 경우 true (예: 호버 50개, 슬롯 공간 20개 남음)
+	 */
+	bool ShouldFillInStack(const int32 RoomInClickedSlot, const int32 HoveredStackCount) const;
+
+	/**
+	 * 클릭한 슬롯을 최대치까지 채우고 나머지는 호버 아이템에 유지합니다
+	 * @param FillAmount 슬롯에 채울 수량 (슬롯의 남은 공간)
+	 * @param Remainder 호버 아이템에 남을 수량
+	 * @param Index 클릭한 그리드 인덱스
+	 */
+	void FillInStack(const int32 FillAmount, const int32 Remainder, const int32 Index);
+	
 	/** 인벤토리 컴포넌트에 대한 약한 참조 */
 	TWeakObjectPtr<UInv_InventoryComponent> InventoryComponent;
 
@@ -464,8 +528,13 @@ private:
 	/** 슬롯에 배치될 아이템 위젯의 클래스 */
 	UPROPERTY(EditAnywhere, Category = "Inventory")
 	TSubclassOf<UInv_SlottedItem> SlottedItemClass;
-
-	/** 인덱스와 슬롯 아이템 위젯의 맵 */
+	
+	/**
+	 * 그리드 인덱스를 키로, 해당 위치에 배치된 슬롯 아이템 위젯을 값으로 저장하는 맵
+	 * 키: 아이템의 좌상단 모서리가 위치한 그리드 인덱스 (0부터 시작)
+	 * 값: 해당 위치에 배치된 슬롯 아이템 위젯
+	 * 아이템의 빠른 검색과 제거를 위해 사용됩니다
+	 */
 	UPROPERTY()
 	TMap<int32, TObjectPtr<UInv_SlottedItem>> SlottedItems;
 
@@ -537,5 +606,6 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Inventory")
 	float TileSize;
 };
+
 
 

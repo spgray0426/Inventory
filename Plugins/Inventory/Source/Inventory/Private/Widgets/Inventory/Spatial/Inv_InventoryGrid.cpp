@@ -66,55 +66,67 @@ FInv_SlotAvailabilityResult UInv_InventoryGrid::HasRoomForItem(const FInv_ItemMa
 {
 	FInv_SlotAvailabilityResult Result;
 
-	//항목이 쌓을 수 있는지 확인합니다.
+	// 아이템이 스택 가능한지 확인합니다
+	// StackableFragment가 있으면 스택 가능한 아이템입니다
 	const FInv_StackableFragment* StackableFragment = Manifest.GetFragmentOfType<FInv_StackableFragment>();
 	Result.bStackable = StackableFragment != nullptr;
 
-	//추가할 스택 수를 결정합니다.
+	// 스택 크기 정보를 초기화합니다
+	// - MaxStackSize: 한 슬롯에 쌓을 수 있는 최대 개수 (예: 64)
+	// - AmountToFill: 그리드에 추가하려는 아이템의 총 개수
 	const int32 MaxStackSize = StackableFragment ? StackableFragment->GetMaxStackSize() : 1;
 	int32 AmountToFill = StackableFragment ? StackableFragment->GetStackCount() : 1;
 	
 	TSet<int32> CheckedIndices;
 	
+	// 모든 그리드 슬롯을 순회하며 아이템을 배치할 수 있는 공간을 찾습니다
 	for (const auto& GridSlot : GridSlots)
 	{
-		// 모든 수량이 채워졌다면 종료
+		// 모든 수량이 배치되었다면 검색 종료
 		if (AmountToFill == 0 ) break;
 
-		// 이미 검사한 슬롯이면 건너뜀
+		// 이미 이전 반복에서 점유된 것으로 표시된 슬롯은 건너뜁니다
 		if (IsIndexClaimed(CheckedIndices, GridSlot->GetIndex())) continue;
 
-		// 그리드 범위를 벗어나면 건너뜀
+		// 아이템이 그리드 경계를 벗어나면 건너뜁니다
+		// 예: 2x2 아이템을 마지막 열에 배치하려고 하면 범위 초과
 		if (!IsInGridBounds(GridSlot->GetIndex(), GetItemDimensions(Manifest))) continue;
-		
-		// 해당 위치에 아이템을 놓을 수 있는지 확인
+
+		// 현재 위치에 아이템을 배치할 수 있는지 확인합니다
+		// TentativelyClaimed: 이 위치에 배치할 경우 점유될 슬롯들의 인덱스 집합
 		TSet<int32> TentativelyClaimed;
 		if (!HasRoomAtIndex(GridSlot, GetItemDimensions(Manifest), CheckedIndices, TentativelyClaimed, Manifest.GetItemType(), MaxStackSize))
 		{
 			continue;
 		}
 
-		// 슬롯에 채울 수 있는 수량을 계산
+		// 이 슬롯에 실제로 채울 수 있는 수량을 계산합니다
+		// 스택 가능 아이템의 경우: min(AmountToFill, 슬롯의 남은 공간)
+		// 스택 불가능 아이템의 경우: 1
 		const int32 AmountToFillInSlot = DetermineFillAmountForSlot(Result.bStackable, MaxStackSize, AmountToFill, GridSlot);
 		if (AmountToFillInSlot == 0) continue;
 
-		// 임시로 점유한 슬롯들을 실제로 점유
+		// 임시로 표시한 슬롯들을 실제 점유 목록에 추가합니다
 		CheckedIndices.Append(TentativelyClaimed);
 
-		// 결과 정보 갱신
+		// 결과에 이 슬롯의 정보를 추가합니다
 		Result.TotalRoomToFill += AmountToFillInSlot;
 		Result.SlotAvailabilities.Emplace(
 			FInv_SlotAvailability{
+				// 이미 아이템이 있는 슬롯이면 해당 아이템의 좌상단 인덱스 사용
 				HasValidItem(GridSlot) ? GridSlot->GetUpperLeftGridIndex() : GridSlot->GetIndex(),
+				// 스택 가능한 경우만 수량 정보 저장
 				Result.bStackable ? AmountToFillInSlot : 0,
+				// 이 위치에 이미 아이템이 있는지 여부
 				HasValidItem(GridSlot)
 			}
 		);
 
-		// 남은 수량 갱신
+		// 남은 배치할 수량을 감소시킵니다
 		AmountToFill -= AmountToFillInSlot;
 		Result.Remainder = AmountToFill;
 
+		// 모든 수량이 배치되었다면 즉시 반환
 		if (AmountToFill == 0) return Result;
 	}
 	return Result;
@@ -124,14 +136,19 @@ bool UInv_InventoryGrid::HasRoomAtIndex(const UInv_GridSlot* GridSlot,const FInt
 {
 	bool bHasRoomAtIndex = true;
 
+	// 아이템이 차지할 모든 슬롯을 순회하며 제약 조건을 확인합니다
+	// 예: 2x2 아이템이라면 4개의 슬롯을 모두 확인
 	UInv_InventoryStatics::ForEach2D(GridSlots, GridSlot->GetIndex(), Dimensions, Columns, [&](const UInv_GridSlot* SubGridSlot)
 	{
+		// 각 슬롯이 아이템을 배치하기 위한 제약 조건을 만족하는지 확인합니다
+		// (비어있거나, 같은 종류의 스택 가능 아이템이 있고 공간이 남아있어야 함)
 		if (CheckSlotConstraints(GridSlot, SubGridSlot, CheckedIndices, OutTentativelyClaimed, ItemType, MaxStackSize))
 		{
 			OutTentativelyClaimed.Add(SubGridSlot->GetIndex());
 		}
 		else
 		{
+			// 하나의 슬롯이라도 제약 조건을 만족하지 못하면 전체 배치 불가능
 			bHasRoomAtIndex = false;
 		}
 	});
@@ -141,29 +158,31 @@ bool UInv_InventoryGrid::HasRoomAtIndex(const UInv_GridSlot* GridSlot,const FInt
 
 bool UInv_InventoryGrid::CheckSlotConstraints(const UInv_GridSlot* GridSlot, const UInv_GridSlot* SubGridSlot,const TSet<int32>& CheckedIndices, TSet<int32>& OutTentativelyClaimed, const FGameplayTag& ItemType, const int32 MaxStackSize) const
 {
-	// 이미 점유된 인덱스면 실패
+	// 이미 다른 아이템 배치를 위해 예약된 슬롯이면 사용 불가
 	if (IsIndexClaimed(CheckedIndices, SubGridSlot->GetIndex())) return false;
 
-	// 아이템이 없는 슬롯이면 사용 가능
+	// 슬롯이 비어있으면 배치 가능
 	if (!HasValidItem(SubGridSlot))
 	{
 		OutTentativelyClaimed.Add(SubGridSlot->GetIndex());
 		return true;
 	}
 
-	// 좌상단 슬롯이 아니면 실패
+	// 슬롯에 이미 아이템이 있는 경우, 스택 가능 여부를 확인합니다
+	// SubGridSlot이 GridSlot의 좌상단 슬롯이 아니면 (다른 아이템의 일부라면) 배치 불가
 	if (!IsUpperLeftSlot(GridSlot, SubGridSlot)) return false;
 
-	// 스택 가능 여부 확인
+	// 기존 아이템이 스택 가능한지 확인
 	const UInv_InventoryItem* SubItem = SubGridSlot->GetInventoryItem().Get();
 	if (!SubItem->IsStackable()) return false;
 
-	// 아이템 타입이 일치하는지 확인
+	// 기존 아이템과 추가하려는 아이템의 타입이 일치하는지 확인
 	if (!DoesItemTypeMatch(SubItem, ItemType)) return false;
 
-	// 스택이 꽉 찼는지 확인
+	// 기존 스택이 최대 용량에 도달했는지 확인
 	if (GridSlot->GetStackCount() >= MaxStackSize) return false;
 
+	// 모든 조건을 만족하면 스택에 추가 가능
 	return true ;
 }
 
@@ -207,7 +226,7 @@ int32 UInv_InventoryGrid::DetermineFillAmountForSlot(const bool bStackable, cons
 int32 UInv_InventoryGrid::GetStackAmount(const UInv_GridSlot* GridSlot) const
 {
 	int32 CurrentSlotStackCount = GridSlot->GetStackCount();
-	// 다중 슬롯 아이템의 경우, 좌상단 슬롯에서 실제 스택 수를 가져옵니다
+	// 여러 슬롯을 차지하는 아이템의 경우, 스택 수는 항상 좌상단 슬롯에 저장되므로 해당 슬롯에서 값을 가져옵니다
 	if (const int32 UpperLeftIndex = GridSlot->GetUpperLeftGridIndex(); UpperLeftIndex != INDEX_NONE)
 	{
 		UInv_GridSlot* UpperLeftGridSlot = GridSlots[UpperLeftIndex];
@@ -355,21 +374,54 @@ void UInv_InventoryGrid::AddStacks(const FInv_SlotAvailabilityResult& Result)
 	}
 }
 
-void UInv_InventoryGrid::OnSlottedItemClicked(int32 GrideIndex, const FPointerEvent& MouseEvent)
+void UInv_InventoryGrid::OnSlottedItemClicked(int32 GridIndex, const FPointerEvent& MouseEvent)
 {
-	check(GridSlots.IsValidIndex(GrideIndex));
-	UInv_InventoryItem* ClickedInventoryItem = GridSlots[GrideIndex]->GetInventoryItem().Get();
+	check(GridSlots.IsValidIndex(GridIndex));
+	UInv_InventoryItem* ClickedInventoryItem = GridSlots[GridIndex]->GetInventoryItem().Get();
 
 	// 호버 아이템이 없고 왼쪽 클릭이면 아이템을 집어듭니다
 	if (!IsValid(HoverItem) && IsLeftClick(MouseEvent))
 	{
-		PickUp(ClickedInventoryItem, GrideIndex);
+		PickUp(ClickedInventoryItem, GridIndex);
+		return;
 	}
-	// 호버 아이템이 있고 오른쪽 클릭이면 (향후 구현 예정)
-	else if (IsValid(HoverItem) && IsRightClick(MouseEvent))
-	{
 
+	// 클릭한 아이템과 호버 아이템이 같은 종류의 스택 가능 아이템인 경우
+	if (IsSameStackable(ClickedInventoryItem))
+	{
+		const int32 ClickedStackCount = GridSlots[GridIndex]->GetStackCount();
+		const FInv_StackableFragment* StackableFragment = ClickedInventoryItem->GetItemManifest().GetFragmentOfType<FInv_StackableFragment>();
+		const int32 MaxStackSize = StackableFragment->GetMaxStackSize();
+		const int32 RoomInClickedSlot = MaxStackSize - ClickedStackCount;
+		const int32 HoveredStackCount = HoverItem->GetStackCount();
+
+		// 클릭한 슬롯이 가득 차있고 호버 아이템이 최대 스택 미만이면 스택 수량을 교환합니다
+		if (ShouldSwapStackCounts(RoomInClickedSlot, HoveredStackCount, MaxStackSize))
+		{
+			SwapStackCounts(ClickedStackCount, HoveredStackCount, GridIndex);
+			return;
+		}
+
+		if (ShouldConsumeHoverItemStacks(HoveredStackCount, RoomInClickedSlot))
+		{
+			ConsumeHoverItemStacks(ClickedStackCount, HoveredStackCount, GridIndex);
+			return;
+		}
+
+		if (ShouldFillInStack(RoomInClickedSlot, HoveredStackCount))
+		{
+			FillInStack(RoomInClickedSlot, HoveredStackCount - RoomInClickedSlot, GridIndex);
+			return;
+		}
+		
+		if (RoomInClickedSlot == 0)
+		{
+			return;
+		}
 	}
+
+	// 다른 종류의 아이템이면 호버 아이템과 위치를 교환합니다
+	SwapWithHoverItem(ClickedInventoryItem, GridIndex);
 }
 
 void UInv_InventoryGrid::OnGridSlotClicked(int32 GridIndex, const FPointerEvent& MouseEvent)
@@ -478,14 +530,15 @@ void UInv_InventoryGrid::UpdateTileParameters(const FVector2D& CanvasPosition, c
 	// 마우스가 캔버스 밖에 있으면 무시
 	if (!bMouseWithinCanvas) return;
 
-	// 호버된 타일의 좌표와 사분면을 계산합니다
+	// 현재 마우스가 위치한 타일의 좌표와 사분면을 계산합니다
 	const FIntPoint HoveredTileCoordinates = CalculateHoveredCoordinates(CanvasPosition, MousePosition);
 	LastTileParameters = TileParameters;
 	TileParameters.TileCoordinats = HoveredTileCoordinates;
 	TileParameters.TileIndex = UInv_WidgetUtils::GetIndexFromPosition(HoveredTileCoordinates, Columns);
+	// 타일 사분면 정보는 드래그 중 아이템의 중심점 배치를 위해 사용됩니다
 	TileParameters.TileQuadrant = CalculateTileQuadrant(CanvasPosition, MousePosition);
 
-	// 타일 파라미터 업데이트 처리
+	// 업데이트된 파라미터에 따라 호버 아이템의 하이라이트를 갱신합니다
 	OnTileParametersUpdated(TileParameters);
 }
 
@@ -521,22 +574,31 @@ EInv_TileQuadrant UInv_InventoryGrid::CalculateTileQuadrant(const FVector2D& Can
 
 void UInv_InventoryGrid::OnTileParametersUpdated(const FInv_TileParameters& Parameters)
 {
+	// 호버 아이템이 없으면 무시
 	if (!IsValid(HoverItem)) return;
-	
+
+	// 호버 아이템의 크기를 가져옵니다
 	const FIntPoint Dimensions = HoverItem->GetGridDimensions();
 
+	// 아이템의 좌상단 시작 좌표를 계산합니다 (사분면 기반)
+	// 마우스가 타일의 어느 사분면에 있는지에 따라 아이템이 중심을 맞춰 배치됩니다
 	const FIntPoint StartingCoordinate = CalculateStartingCoordinate(Parameters.TileCoordinats, Dimensions, Parameters.TileQuadrant);
 	ItemDropIndex = UInv_WidgetUtils::GetIndexFromPosition(StartingCoordinate, Columns);
-	
+
+	// 계산된 위치에 아이템을 배치할 수 있는지 확인합니다
 	CurrentQueryResult = CheckHoverPosition(StartingCoordinate, Dimensions);
 
+	// 배치 가능한 경우: 해당 영역을 초록색으로 하이라이트
 	if (CurrentQueryResult.bHasSpace)
 	{
 		HighlightSlots(ItemDropIndex, Dimensions);
 		return;
 	}
+	// 배치 불가능한 경우: 이전 하이라이트 제거
 	UnHighlightSlots(LastHighlightedIndex, LastHighlightedDimensions);
 
+	// 배치하려는 위치에 다른 아이템이 있는 경우: 해당 아이템을 회색으로 표시
+	// (교환 가능하다는 시각적 피드백)
 	if (CurrentQueryResult.ValidItem.IsValid() && GridSlots.IsValidIndex(CurrentQueryResult.UpperLeftIndex))
 	{
 		const FInv_GridFragment* GridFragment = GetFragment<FInv_GridFragment>(CurrentQueryResult.ValidItem.Get(), FragmentTags::GridFragment);
@@ -548,25 +610,33 @@ void UInv_InventoryGrid::OnTileParametersUpdated(const FInv_TileParameters& Para
 
 FIntPoint UInv_InventoryGrid::CalculateStartingCoordinate(const FIntPoint& Coordinate, const FIntPoint& Dimensions, const EInv_TileQuadrant Quadrant) const
 {
+	// 아이템 크기가 짝수인지 확인 (짝수면 1, 홀수면 0)
+	// 짝수 크기의 경우 중심을 맞추기 위해 추가 오프셋이 필요합니다
 	const int32 HasEvenWidth = Dimensions.X % 2 == 0 ? 1 : 0;
 	const int32 HasEvenHeight = Dimensions.Y % 2 == 0 ? 1 : 0;
 
 	FIntPoint StartingCoord;
+	// 마우스가 위치한 타일의 사분면에 따라 아이템의 시작 좌표를 계산합니다
+	// 목표: 마우스 커서를 아이템의 중심에 가깝게 배치
 	switch (Quadrant)
 	{
 	case EInv_TileQuadrant::TopLeft:
+		// 좌상단 사분면: 아이템 중심을 왼쪽 위로 배치
 		StartingCoord.X = Coordinate.X - FMath::FloorToInt(0.5f * Dimensions.X);
 		StartingCoord.Y = Coordinate.Y - FMath::FloorToInt(0.5f * Dimensions.Y);
 		break;
 	case EInv_TileQuadrant::TopRight:
+		// 우상단 사분면: 아이템 중심을 오른쪽 위로 배치 (짝수 너비 보정 적용)
 		StartingCoord.X = Coordinate.X - FMath::FloorToInt(0.5f * Dimensions.X) + HasEvenWidth;
 		StartingCoord.Y = Coordinate.Y - FMath::FloorToInt(0.5f * Dimensions.Y);
 		break;
 	case EInv_TileQuadrant::BottomLeft:
+		// 좌하단 사분면: 아이템 중심을 왼쪽 아래로 배치 (짝수 높이 보정 적용)
 		StartingCoord.X = Coordinate.X - FMath::FloorToInt(0.5f * Dimensions.X);
 		StartingCoord.Y = Coordinate.Y - FMath::FloorToInt(0.5f * Dimensions.Y) + HasEvenHeight;
 		break;
 	case EInv_TileQuadrant::BottomRight:
+		// 우하단 사분면: 아이템 중심을 오른쪽 아래로 배치 (짝수 너비/높이 보정 모두 적용)
 		StartingCoord.X = Coordinate.X - FMath::FloorToInt(0.5f * Dimensions.X) + HasEvenWidth;
 		StartingCoord.Y = Coordinate.Y - FMath::FloorToInt(0.5f * Dimensions.Y) + HasEvenHeight;
 		break;
@@ -580,13 +650,14 @@ FIntPoint UInv_InventoryGrid::CalculateStartingCoordinate(const FIntPoint& Coord
 FInv_SpaceQueryResult UInv_InventoryGrid::CheckHoverPosition(const FIntPoint& Position, const FIntPoint& Dimensions)
 {
 	FInv_SpaceQueryResult Result;
-	
-	// in the grid bounds?
+
+	// 그리드 경계 내에 있는지 확인
 	if (!IsInGridBounds(UInv_WidgetUtils::GetIndexFromPosition(Position, Columns), Dimensions)) return Result;
 
 	Result.bHasSpace = true;
-	
-	// 둘 이상의 인덱스가 동일한 항목으로 점유되어 있는 경우 모두 동일한 왼쪽 상단 인덱스를 가지고 있는지 확인해야 합니다.
+
+	// 아이템이 차지할 영역에 있는 모든 기존 아이템의 좌상단 인덱스를 수집합니다
+	// 여러 슬롯을 점유하는 아이템이 있을 경우, 모두 동일한 좌상단 인덱스를 가지는지 확인하기 위함입니다
 	TSet<int32> OccupiedUpperLeftIndices;
 	UInv_InventoryStatics::ForEach2D(GridSlots, UInv_WidgetUtils::GetIndexFromPosition(Position, Columns), Dimensions, Columns, [&](const UInv_GridSlot* GridSlot)
 	{
@@ -596,15 +667,15 @@ FInv_SpaceQueryResult UInv_InventoryGrid::CheckHoverPosition(const FIntPoint& Po
 			Result.bHasSpace = false;
 		}
 	});
-	
-	// 그렇다면 방해가 되는 항목은 하나뿐입니까? (교환할 수 있습니까?)
-	if (OccupiedUpperLeftIndices.Num() == 1) // 위치의 단일 항목 - 교환/결합에 유효합니다.
+
+	// 정확히 하나의 아이템만 영역을 점유하고 있다면, 해당 아이템과 교환하거나 결합할 수 있습니다
+	if (OccupiedUpperLeftIndices.Num() == 1)
 	{
 		const int32 Index = *OccupiedUpperLeftIndices.CreateConstIterator();
 		Result.ValidItem = GridSlots[Index]->GetInventoryItem();
 		Result.UpperLeftIndex = GridSlots[Index]->GetUpperLeftGridIndex();
 	}
-	
+
 	return Result;
 }
 
@@ -731,6 +802,117 @@ UUserWidget* UInv_InventoryGrid::GetHiddenCursorWidget()
 		HiddenCursorWidget = CreateWidget<UUserWidget>(GetOwningPlayer(), HiddenCursorWidgetClass);
 	}
 	return HiddenCursorWidget;
+}
+
+bool UInv_InventoryGrid::IsSameStackable(const UInv_InventoryItem* ClickedInventoryItem) const
+{
+	// 클릭한 아이템과 호버 아이템이 동일한 인스턴스인지 확인
+	const bool bIsSameItem = ClickedInventoryItem == HoverItem->GetInventoryItem();
+	// 클릭한 아이템이 스택 가능한지 확인
+	const bool bIsStackable = ClickedInventoryItem->IsStackable();
+	// 세 가지 조건을 모두 만족해야 같은 종류의 스택 가능 아이템입니다
+	// 1. 동일한 아이템 인스턴스
+	// 2. 스택 가능한 아이템
+	// 3. 아이템 타입 태그가 정확히 일치
+	return bIsSameItem && bIsStackable && HoverItem->GetItemType().MatchesTagExact(ClickedInventoryItem->GetItemManifest().GetItemType());
+}
+
+void UInv_InventoryGrid::SwapWithHoverItem(UInv_InventoryItem* ClickedInventoryItem, const int32 GridIndex)
+{
+	// 호버 아이템이 없으면 무시
+	if (!IsValid(HoverItem)) return;
+
+	// 호버 아이템의 정보를 임시 변수에 저장합니다
+	UInv_InventoryItem* TempInventoryItem = HoverItem->GetInventoryItem();
+	const int32 TempStackCount = HoverItem->GetStackCount();
+	const bool bTempIsStackable = HoverItem->IsStackable();
+
+	// 클릭한 아이템을 호버 아이템으로 설정하고 (이전 그리드 인덱스는 유지)
+	AssignHoverItem(ClickedInventoryItem, GridIndex, HoverItem->GetPreviousGridIndex());
+	// 클릭한 위치에서 아이템을 제거한 후
+	RemoveItemFromGrid(ClickedInventoryItem, GridIndex);
+	// 임시 저장한 아이템을 ItemDropIndex 위치에 배치합니다
+	AddItemAtIndex(TempInventoryItem, ItemDropIndex, bTempIsStackable, TempStackCount);
+	UpdateGridSlots(TempInventoryItem, ItemDropIndex, bTempIsStackable, TempStackCount);
+}
+
+bool UInv_InventoryGrid::ShouldSwapStackCounts(const int32 RoomInClickedSlot, const int32 HoveredStackCount, const int32 MaxStackSize) const
+{
+	// 클릭한 슬롯에 공간이 없고(가득 참) 호버 아이템이 최대 스택 미만인 경우 교환해야 합니다
+	// 예: 클릭한 슬롯 = 64/64, 호버 아이템 = 32/64 -> 교환하여 32/64, 64/64
+	return RoomInClickedSlot == 0 && HoveredStackCount < MaxStackSize;
+}
+
+void UInv_InventoryGrid::SwapStackCounts(const int32 ClickedStackCount, const int32 HoveredStackCount, const int32 Index)
+{
+	// 클릭한 슬롯의 스택 수량을 호버 아이템의 수량으로 설정
+	UInv_GridSlot* GridSlot = GridSlots[Index];
+	GridSlot->SetStackCount(HoveredStackCount);
+
+	// 슬롯 아이템 위젯의 스택 표시도 업데이트
+	UInv_SlottedItem* ClickedSlottedItem = SlottedItems.FindChecked(Index);
+	ClickedSlottedItem->UpdateStackCount(HoveredStackCount);
+
+	// 호버 아이템의 스택 수량을 클릭한 슬롯의 수량으로 설정
+	HoverItem->UpdateStackCount(ClickedStackCount);
+}
+
+bool UInv_InventoryGrid::ShouldConsumeHoverItemStacks(const int32 HoveredStackCount, const int32 RoomInClickedSlot) const
+{
+	// 클릭한 슬롯의 남은 공간이 호버 아이템의 스택 수량보다 크거나 같으면 전체 소비 가능
+	// 예: 클릭한 슬롯 40/64 (24개 공간), 호버 20개 -> true (전체 소비 가능)
+	// 예: 클릭한 슬롯 50/64 (14개 공간), 호버 20개 -> false (일부만 소비 가능)
+	return RoomInClickedSlot >= HoveredStackCount;
+}
+
+void UInv_InventoryGrid::ConsumeHoverItemStacks(const int32 ClickedStackCount, const int32 HoveredStackCount, const int32 Index)
+{
+	// 호버 아이템의 모든 스택을 클릭한 슬롯으로 이동합니다
+	const int32 AmountToTransfer = HoveredStackCount;
+	const int32 NewClickedStackCount = ClickedStackCount + AmountToTransfer;
+	// 예: 클릭한 슬롯 40개 + 호버 20개 = 60개
+
+	// 그리드 슬롯의 스택 수량을 업데이트합니다
+	GridSlots[Index]->SetStackCount(NewClickedStackCount);
+	// 슬롯 아이템 위젯의 표시도 업데이트합니다
+	SlottedItems.FindChecked(Index)->UpdateStackCount(NewClickedStackCount);
+
+	// 호버 아이템의 모든 스택이 소비되었으므로 호버 아이템을 완전히 제거합니다
+	ClearHoverItem();
+	// 커서를 다시 표시합니다
+	ShowCursor();
+
+	// 스택이 추가된 슬롯을 하이라이트하여 시각적 피드백을 제공합니다
+	const FInv_GridFragment* GridFragment = GridSlots[Index]->GetInventoryItem()->GetItemManifest().GetFragmentOfType<FInv_GridFragment>();
+	const FIntPoint Dimensions = GridFragment ? GridFragment->GetGridSize() : FIntPoint(1, 1);
+	HighlightSlots(Index, Dimensions);
+}
+
+bool UInv_InventoryGrid::ShouldFillInStack(const int32 RoomInClickedSlot, const int32 HoveredStackCount) const
+{
+	// 클릭한 슬롯의 남은 공간이 호버 아이템의 스택 수량보다 적으면 부분 채우기 필요
+	// 예: 클릭한 슬롯 50/64 (14개 공간), 호버 20개 -> true (14개만 채우고 6개는 호버에 남음)
+	// 예: 클릭한 슬롯 40/64 (24개 공간), 호버 20개 -> false (전체 소비 가능)
+	return RoomInClickedSlot < HoveredStackCount;
+}
+
+void UInv_InventoryGrid::FillInStack(const int32 FillAmount, const int32 Remainder, const int32 Index)
+{
+	// 클릭한 슬롯을 최대치까지 채웁니다
+	UInv_GridSlot* GridSlot = GridSlots[Index];
+	const int32 NewStackCount = GridSlot->GetStackCount() + FillAmount;
+	// 예: 클릭한 슬롯 50개 + 채울 수량 14개 = 64개 (최대치)
+
+	// 그리드 슬롯의 스택 수량을 업데이트합니다
+	GridSlot->SetStackCount(NewStackCount);
+
+	// 슬롯 아이템 위젯의 표시도 업데이트합니다
+	UInv_SlottedItem* ClickedSlottedItem = SlottedItems.FindChecked(Index);
+	ClickedSlottedItem->UpdateStackCount(NewStackCount);
+
+	// 호버 아이템에는 남은 수량만 유지합니다
+	// 예: 원래 호버 20개 - 채운 14개 = 6개 남음
+	HoverItem->UpdateStackCount(Remainder);
 }
 
 void UInv_InventoryGrid::AssignHoverItem(UInv_InventoryItem* InventoryItem)
