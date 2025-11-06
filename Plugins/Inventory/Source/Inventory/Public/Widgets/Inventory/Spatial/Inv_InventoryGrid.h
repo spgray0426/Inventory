@@ -135,30 +135,125 @@ private:
 	 * @return 점유된 경우 true
 	 */
 	bool IsIndexClaimed(const TSet<int32>& CheckedIndices, const int32 Index) const;
+
+	/**
+	 * 지정된 인덱스에 아이템을 배치할 공간이 있는지 확인합니다
+	 * @param GridSlot 확인할 그리드 슬롯
+	 * @param Dimensions 아이템의 크기 (너비, 높이)
+	 * @param CheckedIndices 이미 확인된 인덱스 집합
+	 * @param OutTentativelyClaimed 임시로 점유된 인덱스들을 반환할 출력 매개변수
+	 * @param ItemType 아이템 타입 GameplayTag
+	 * @param MaxStackSize 최대 스택 크기
+	 * @return 공간이 있는 경우 true
+	 */
 	bool HasRoomAtIndex(const UInv_GridSlot* GridSlot,
 		const FIntPoint& Dimensions,
 		const TSet<int32>& CheckedIndices,
 		TSet<int32>& OutTentativelyClaimed,
 		const FGameplayTag& ItemType,
 		const int32 MaxStackSize);
+
+	/**
+	 * 슬롯 제약 조건을 확인합니다 (스택 가능 여부, 타입 일치 등)
+	 * @param GridSlot 주 그리드 슬롯
+	 * @param SubGridSlot 확인할 하위 그리드 슬롯
+	 * @param CheckedIndices 이미 확인된 인덱스 집합
+	 * @param OutTentativelyClaimed 임시로 점유된 인덱스들
+	 * @param ItemType 아이템 타입 GameplayTag
+	 * @param MaxStackSize 최대 스택 크기
+	 * @return 제약 조건을 만족하는 경우 true
+	 */
 	bool CheckSlotConstraints(const UInv_GridSlot* GridSlot,
 		const UInv_GridSlot* SubGridSlot,
 		const TSet<int32>& CheckedIndices,
 		TSet<int32>& OutTentativelyClaimed,
 		const FGameplayTag& ItemType,
 		const int32 MaxStackSize) const;
+
+	/**
+	 * 그리드 슬롯에 유효한 아이템이 있는지 확인합니다
+	 * @param GridSlot 확인할 그리드 슬롯
+	 * @return 유효한 아이템이 있는 경우 true
+	 */
 	bool HasValidItem(const UInv_GridSlot* GridSlot) const;
+
+	/**
+	 * SubGridSlot이 GridSlot의 좌상단 슬롯인지 확인합니다
+	 * @param GridSlot 주 그리드 슬롯
+	 * @param SubGridSlot 확인할 하위 슬롯
+	 * @return 좌상단 슬롯인 경우 true
+	 */
 	bool IsUpperLeftSlot(const UInv_GridSlot* GridSlot, const UInv_GridSlot* SubGridSlot) const;
+
+	/**
+	 * 아이템 타입이 일치하는지 확인합니다
+	 * @param SubItem 확인할 인벤토리 아이템
+	 * @param ItemType 비교할 아이템 타입 GameplayTag
+	 * @return 타입이 일치하는 경우 true
+	 */
 	bool DoesItemTypeMatch(const UInv_InventoryItem* SubItem, const FGameplayTag& ItemType) const;
+
+	/**
+	 * 아이템이 그리드 경계 내에 있는지 확인합니다
+	 * @param StartIndex 시작 인덱스
+	 * @param ItemDimensions 아이템 크기
+	 * @return 경계 내에 있는 경우 true
+	 */
 	bool IsInGridBounds(const int32 StartIndex, const FIntPoint& ItemDimensions) const;
+
+	/**
+	 * 슬롯에 채울 수 있는 수량을 결정합니다
+	 * @param bStackable 스택 가능 여부
+	 * @param MaxStackSize 최대 스택 크기
+	 * @param AmountToFill 채워야 할 총 수량
+	 * @param GridSlot 대상 그리드 슬롯
+	 * @return 슬롯에 채울 수량
+	 */
 	int32 DetermineFillAmountForSlot(const bool bStackable, const int32 MaxStackSize, const int32 AmountToFill, const UInv_GridSlot* GridSlot) const;
+
+	/**
+	 * 그리드 슬롯의 현재 스택 수량을 가져옵니다
+	 * @param GridSlot 확인할 그리드 슬롯
+	 * @return 스택 수량
+	 */
 	int32 GetStackAmount(const UInv_GridSlot* GridSlot) const;
-	
+
+	/**
+	 * 아이템 매니페스트에서 아이템의 크기를 가져옵니다
+	 * @param Manifest 아이템 매니페스트
+	 * @return 아이템 크기 (너비, 높이)
+	 */
 	FIntPoint GetItemDimensions(const FInv_ItemManifest& Manifest) const;
-	
+
+	/**
+	 * 아이템이 이 그리드의 카테고리와 일치하는지 확인합니다
+	 * @param Item 확인할 인벤토리 아이템
+	 * @return 카테고리가 일치하는 경우 true
+	 */
 	bool MatchesCategory(const UInv_InventoryItem* Item) const;
+
+	/**
+	 * 그리드 프래그먼트로부터 그릴 크기를 계산합니다
+	 * @param GridFragment 그리드 프래그먼트
+	 * @return 그릴 크기 (픽셀)
+	 */
 	FVector2D GetDrawSize(const FInv_GridFragment* GridFragment) const;
+
+	/**
+	 * 슬롯 아이템의 이미지를 설정합니다
+	 * @param SlottedItem 슬롯 아이템 위젯
+	 * @param GridFragment 그리드 프래그먼트
+	 * @param ImageFragment 이미지 프래그먼트
+	 */
 	void SetSlottedItemImage(const UInv_SlottedItem* SlottedItem, const FInv_GridFragment* GridFragment, const FInv_ImageFragment* ImageFragment) const;
+
+	/**
+	 * 지정된 인덱스에 아이템을 추가합니다
+	 * @param Item 추가할 인벤토리 아이템
+	 * @param Index 그리드 인덱스
+	 * @param bStackable 스택 가능 여부
+	 * @param StackAmount 스택 수량
+	 */
 	void AddItemAtIndex(UInv_InventoryItem* Item, const int32 Index, const bool bStackable, const int32 StackAmount);
 	
 	/**
@@ -241,14 +336,60 @@ private:
 	 * @param GridIndex 그리드 인덱스
 	 */
 	void RemoveItemFromGrid(UInv_InventoryItem* InventoryItem, const int32 GridIndex);
+
+	/**
+	 * 타일 파라미터를 업데이트합니다 (마우스 위치 기반)
+	 * @param CanvasPosition 캔버스 위치
+	 * @param MousePosition 마우스 위치
+	 */
 	void UpdateTileParameters(const FVector2D& CanvasPosition, const FVector2D& MousePosition);
 
+	/**
+	 * 마우스가 호버하고 있는 타일의 좌표를 계산합니다
+	 * @param CanvasPosition 캔버스 위치
+	 * @param MousePosition 마우스 위치
+	 * @return 호버된 타일 좌표
+	 */
 	FIntPoint CalculateHoveredCoordinates(const FVector2D& CanvasPosition, const FVector2D& MousePosition) const;
+
+	/**
+	 * 타일 내에서 마우스가 위치한 사분면을 계산합니다
+	 * @param CanvasPosition 캔버스 위치
+	 * @param MousePosition 마우스 위치
+	 * @return 타일 사분면 (좌상단, 우상단, 좌하단, 우하단)
+	 */
 	EInv_TileQuadrant CalculateTileQuadrant(const FVector2D& CanvasPosition, const FVector2D& MousePosition) const;
+
+	/**
+	 * 타일 파라미터가 업데이트되었을 때 호출됩니다
+	 * @param Parameters 업데이트된 타일 파라미터
+	 */
 	void OnTileParametersUpdated(const FInv_TileParameters& Parameters);
+
+	/**
+	 * 아이템의 시작 좌표를 계산합니다 (사분면 기반 배치)
+	 * @param Coordinate 현재 좌표
+	 * @param Dimensions 아이템 크기
+	 * @param Quadrant 타일 사분면
+	 * @return 계산된 시작 좌표
+	 */
 	FIntPoint CalculateStartingCoordinate(const FIntPoint& Coordinate, const FIntPoint& Dimensions, const EInv_TileQuadrant Quadrant) const;
 
+	/**
+	 * 호버 위치에 공간이 있는지 확인합니다
+	 * @param Position 확인할 위치
+	 * @param Dimensions 아이템 크기
+	 * @return 공간 쿼리 결과
+	 */
 	FInv_SpaceQueryResult CheckHoverPosition(const FIntPoint& Position, const FIntPoint& Dimensions);
+
+	/**
+	 * 커서가 캔버스를 벗어났는지 확인합니다
+	 * @param BoundaryPos 경계 위치
+	 * @param BoundarySize 경계 크기
+	 * @param Location 현재 위치
+	 * @return 캔버스를 벗어난 경우 true
+	 */
 	bool CursorExitedCanvas(const FVector2D& BoundaryPos, const FVector2D& BoundarySize, const FVector2D& Location);
 
 	/**

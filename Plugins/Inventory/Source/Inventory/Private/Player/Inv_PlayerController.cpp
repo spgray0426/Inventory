@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Player/Inv_PlayerContriller.h"
+#include "Player/Inv_PlayerController.h"
 
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
@@ -12,20 +12,20 @@
 #include "Kismet/GameplayStatics.h"
 #include "Widgets/HUD/Inv_HUDWidget.h"
 
-AInv_PlayerContriller::AInv_PlayerContriller()
+AInv_PlayerController::AInv_PlayerController()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	
 	TraceLength = 500.f;
 }
 
-void AInv_PlayerContriller::ToggleInventoryMenu()
+void AInv_PlayerController::ToggleInventoryMenu()
 {
 	if (!InventoryComponent.IsValid()) return;
 	InventoryComponent->ToggleInventoryMenu();
 }
 
-void AInv_PlayerContriller::BeginPlay()
+void AInv_PlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
@@ -41,7 +41,7 @@ void AInv_PlayerContriller::BeginPlay()
 	CreateHUDWidget();
 }
 
-void AInv_PlayerContriller::SetupInputComponent()
+void AInv_PlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
 
@@ -52,7 +52,7 @@ void AInv_PlayerContriller::SetupInputComponent()
 	EnhancedInputComponent->BindAction(ToggleInventoryAction, ETriggerEvent::Started, this, &ThisClass::ToggleInventoryMenu);
 }
 
-void AInv_PlayerContriller::Tick(float DeltaTime)
+void AInv_PlayerController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
@@ -60,7 +60,7 @@ void AInv_PlayerContriller::Tick(float DeltaTime)
 	
 }
 
-void AInv_PlayerContriller::PrimaryInteract()
+void AInv_PlayerController::PrimaryInteract()
 {
 	if (!CurrentItemActor.IsValid()) return;
 
@@ -71,7 +71,7 @@ void AInv_PlayerContriller::PrimaryInteract()
 	
 }
 
-void AInv_PlayerContriller::CreateHUDWidget()
+void AInv_PlayerController::CreateHUDWidget()
 {
 	if (!IsLocalPlayerController()) return;
 
@@ -83,7 +83,7 @@ void AInv_PlayerContriller::CreateHUDWidget()
 	}
 }
 
-void AInv_PlayerContriller::TraceForItem()
+void AInv_PlayerController::TraceForItem()
 {
 	if (!IsValid(GEngine) || !IsValid(GEngine->GameViewport)) return;
 	

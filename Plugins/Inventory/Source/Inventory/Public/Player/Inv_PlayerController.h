@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
-#include "Inv_PlayerContriller.generated.h"
+#include "Inv_PlayerController.generated.h"
 
 class UInv_InventoryComponent;
 class UInv_HUDWidget;
@@ -17,13 +17,14 @@ class UInputMappingContext;
  * 입력 매핑 컨텍스트, HUD 위젯 생성, 아이템 감지 레이 트레이스를 처리합니다
  */
 UCLASS()
-class INVENTORY_API AInv_PlayerContriller : public APlayerController
+class INVENTORY_API AInv_PlayerController : public APlayerController
 {
 	GENERATED_BODY()
 
+	
 public:
 	/** 기본 생성자 */
-	AInv_PlayerContriller();
+	AInv_PlayerController();
 
 	/**
 	 * 인벤토리 메뉴를 열거나 닫습니다
