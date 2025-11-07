@@ -9,6 +9,7 @@
 #include "Widgets/Inventory/SlottedItems/Inv_SlottedItem.h"
 #include "Inv_InventoryGrid.generated.h"
 
+class UInv_ItemPopUp;
 enum class EInv_GridSlotState : uint8;
 class UInv_HoverItem;
 struct FInv_ImageFragment;
@@ -77,6 +78,8 @@ public:
 	 * HiddenCursorWidget을 마우스 커서로 설정하여 커서를 보이지 않게 합니다
 	 */
 	void HideCursor();
+
+	void SetOwningCanvas(UCanvasPanel* OwningCanvas);
 private:
 
 	/**
@@ -84,7 +87,7 @@ private:
 	 * 지정된 행과 열 수에 따라 그리드 슬롯들을 생성하고 캔버스에 배치합니다
 	 */
 	void ConstructGrid();
-
+	
 	/**
 	 * 인벤토리 아이템을 위한 공간이 있는지 확인합니다
 	 * @param Item 확인할 인벤토리 아이템
@@ -513,10 +516,14 @@ private:
 	 * @param Index 클릭한 그리드 인덱스
 	 */
 	void FillInStack(const int32 FillAmount, const int32 Remainder, const int32 Index);
+
+	void CreateItemPopUp(const int32 GridIndex);
 	
 	/** 인벤토리 컴포넌트에 대한 약한 참조 */
 	TWeakObjectPtr<UInv_InventoryComponent> InventoryComponent;
 
+	TWeakObjectPtr<UCanvasPanel> OwningCanvasPanel;
+	
 	/** 이 그리드가 표시하는 아이템 카테고리 (장비, 소비품, 제작 재료) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Inventory", meta=(AllowPrivateAccess = "true"))
 	EInv_ItemCategory ItemCategory;
@@ -594,6 +601,12 @@ private:
 	UPROPERTY()
 	TObjectPtr<UUserWidget> HiddenCursorWidget;
 
+	UPROPERTY(EditAnywhere, Category = "Inventory")
+	TSubclassOf<UInv_ItemPopUp> ItemPopUpClass;
+
+	UPROPERTY()
+	TObjectPtr<UInv_ItemPopUp> ItemPopUp;
+	
 	/** 그리드의 행 수 */
 	UPROPERTY(EditAnywhere, Category = "Inventory")
 	int32 Rows;

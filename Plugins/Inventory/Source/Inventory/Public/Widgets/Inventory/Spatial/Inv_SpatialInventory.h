@@ -6,6 +6,7 @@
 #include "Widgets/Inventory/InventoryBase/Inv_InventoryBase.h"
 #include "Inv_SpatialInventory.generated.h"
 
+class UCanvasPanel;
 class UButton;
 class UWidgetSwitcher;
 class UInv_InventoryGrid;
@@ -70,6 +71,9 @@ private:
 	 */
 	void SetActiveGrid(UInv_InventoryGrid* Grid, UButton* Button);
 
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UCanvasPanel> CanvasPanel;
+	
 	/** 카테고리 그리드를 전환하는 위젯 스위처 (블루프린트에서 바인딩됨) */
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UWidgetSwitcher> WidgetSwitcher;
