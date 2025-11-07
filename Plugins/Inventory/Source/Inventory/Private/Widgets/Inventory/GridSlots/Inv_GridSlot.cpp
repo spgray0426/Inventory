@@ -5,6 +5,7 @@
 #include "Items/Inv_InventoryItem.h"
 
 #include "Components/Image.h"
+#include "Widgets/ItemPopUp/Inv_ItemPopUp.h"
 
 void UInv_GridSlot::NativeOnMouseEnter(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
 {
@@ -60,4 +61,21 @@ void UInv_GridSlot::SetGrayedOutTexture()
     // 슬롯 상태를 비활성화로 변경하고 해당 브러시를 적용합니다
     GridSlotState = EInv_GridSlotState::GrayedOut;
     Image_GridSlot->SetBrush(Brush_GrayedOut);
+}
+
+void UInv_GridSlot::SetItemPopUp(UInv_ItemPopUp* PopUp)
+{
+    ItemPopUp = PopUp;
+    ItemPopUp->SetGridIndex(GetIndex());
+    ItemPopUp->OnNativeDestruct.AddUObject(this, &ThisClass::OnItemPopUpDestruct);
+}
+
+UInv_ItemPopUp* UInv_GridSlot::GetItemPopUp() const
+{
+    return ItemPopUp.Get();
+}
+
+void UInv_GridSlot::OnItemPopUpDestruct(UUserWidget* Menu)
+{
+    ItemPopUp.Reset();
 }

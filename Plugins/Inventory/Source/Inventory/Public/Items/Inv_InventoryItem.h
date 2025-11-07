@@ -55,6 +55,8 @@ public:
 	 * @return 아이템이 스택 가능한 경우 true를 반환하며, 그렇지 않은 경우 false를 반환합니다.
 	 */
 	bool IsStackable() const;
+
+	bool IsConsumable() const;
 	/**
 	 * 총 스택 수를 반환합니다.
 	 *

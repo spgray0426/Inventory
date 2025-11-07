@@ -6,6 +6,7 @@
 #include "Blueprint/UserWidget.h"
 #include "Inv_GridSlot.generated.h"
 
+class UInv_ItemPopUp;
 class UInv_InventoryItem;
 class UImage;
 
@@ -120,6 +121,9 @@ public:
 	/** 비활성화 상태의 텍스처를 설정합니다 */
 	void SetGrayedOutTexture();
 
+	void SetItemPopUp(UInv_ItemPopUp* PopUp);
+	UInv_ItemPopUp* GetItemPopUp() const;
+	
 	/** 그리드 슬롯이 클릭되었을 때 발생하는 이벤트 */
 	FGridSlotEvent GridSlotClicked;
 
@@ -130,6 +134,9 @@ public:
 	FGridSlotEvent GridSlotUnhovered;
 private:
 
+	UFUNCTION()
+	void OnItemPopUpDestruct(UUserWidget* Menu);
+	
 	/** 이 슬롯의 타일 인덱스 (그리드 내 위치) */
 	int32 TileIndex{INDEX_NONE};
 
@@ -139,11 +146,13 @@ private:
 	/** 아이템의 좌상단 그리드 인덱스 (다중 슬롯 아이템의 경우) */
 	int32 UpperLeftGridIndex{INDEX_NONE};
 
+	/** 이 슬롯이 사용 가능한지 여부 (아이템을 놓을 수 있는지) */
+	bool bAvailable{true};
+	
 	/** 이 슬롯에 배치된 인벤토리 아이템에 대한 약한 참조 */
 	TWeakObjectPtr<UInv_InventoryItem> InventoryItem;
 
-	/** 이 슬롯이 사용 가능한지 여부 (아이템을 놓을 수 있는지) */
-	bool bAvailable{true};
+	TWeakObjectPtr<UInv_ItemPopUp> ItemPopUp;
 
 	/** 그리드 슬롯의 이미지 위젯 (블루프린트에서 바인딩됨) */
 	UPROPERTY(meta = (BindWidget))

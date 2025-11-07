@@ -309,6 +309,15 @@ private:
 	UFUNCTION()
 	void OnGridSlotUnhovered(int32 GridIndex, const FPointerEvent& MouseEvent);
 
+	UFUNCTION()
+	void OnPopUpMenuSplit(int32 SplitAmount, int32 Index);
+
+	UFUNCTION()
+	void OnPopUpMenuDrop(int32 Index);
+
+	UFUNCTION()
+	void OnPopUpMenuConsume(int32 Index);
+	
 	/**
 	 * 마우스 이벤트가 오른쪽 클릭인지 확인합니다
 	 * @param MouseEvent 마우스 이벤트
@@ -606,6 +615,9 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UInv_ItemPopUp> ItemPopUp;
+
+	UPROPERTY(EditAnywhere, Category = "Inventory")
+	FVector2D ItemPopUpOffset;
 	
 	/** 그리드의 행 수 */
 	UPROPERTY(EditAnywhere, Category = "Inventory")
