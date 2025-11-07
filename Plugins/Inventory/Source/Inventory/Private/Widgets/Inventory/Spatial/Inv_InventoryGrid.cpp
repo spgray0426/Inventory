@@ -18,6 +18,7 @@
 #include "Widgets/Utils/Inv_WidgetUtils.h"
 #include "Widgets/Inventory/SlottedItems/Inv_SlottedItem.h"
 #include "Widgets/Inventory/HoverItem/Inv_HoverItem.h"
+#include "Widgets/ItemPopUp/Inv_ItemPopUp.h"
 
 void UInv_InventoryGrid::NativeOnInitialized()
 {
@@ -268,6 +269,11 @@ void UInv_InventoryGrid::HideCursor()
 	GetOwningPlayer()->SetMouseCursorWidget(EMouseCursor::Default, GetHiddenCursorWidget());
 }
 
+void UInv_InventoryGrid::SetOwningCanvas(UCanvasPanel* OwningCanvas)
+{
+	OwningCanvasPanel = OwningCanvas;
+}
+
 void UInv_InventoryGrid::AddItemToIndices(const FInv_SlotAvailabilityResult& Result, UInv_InventoryItem* NewItem)
 {
 	// 사용 가능한 모든 슬롯에 아이템을 추가하고 업데이트합니다
@@ -386,6 +392,12 @@ void UInv_InventoryGrid::OnSlottedItemClicked(int32 GridIndex, const FPointerEve
 		return;
 	}
 
+	if (IsRightClick(MouseEvent))
+	{
+		CreateItemPopUp(GridIndex);
+		return;
+	}
+	
 	// 클릭한 아이템과 호버 아이템이 같은 종류의 스택 가능 아이템인 경우
 	if (IsSameStackable(ClickedInventoryItem))
 	{
@@ -913,6 +925,20 @@ void UInv_InventoryGrid::FillInStack(const int32 FillAmount, const int32 Remaind
 	// 호버 아이템에는 남은 수량만 유지합니다
 	// 예: 원래 호버 20개 - 채운 14개 = 6개 남음
 	HoverItem->UpdateStackCount(Remainder);
+}
+
+void UInv_InventoryGrid::CreateItemPopUp(const int32 GridIndex)
+{
+	UInv_InventoryItem* RightClickedItem = GridSlots[GridIndex]->GetInventoryItem().Get();
+	if (!IsValid(RightClickedItem)) return;
+
+	ItemPopUp = CreateWidget<UInv_ItemPopUp>(this, ItemPopUpClass);
+	
+	OwningCanvasPanel->AddChild(ItemPopUp);
+	UCanvasPanelSlot* CanvasSlot = UWidgetLayoutLibrary::SlotAsCanvasSlot(ItemPopUp);
+	const FVector2D MousePosition = UWidgetLayoutLibrary::GetMousePositionOnViewport(GetOwningPlayer());
+	CanvasSlot->SetPosition(MousePosition);
+	CanvasSlot->SetSize(ItemPopUp->GetBoxSize());
 }
 
 void UInv_InventoryGrid::AssignHoverItem(UInv_InventoryItem* InventoryItem)
