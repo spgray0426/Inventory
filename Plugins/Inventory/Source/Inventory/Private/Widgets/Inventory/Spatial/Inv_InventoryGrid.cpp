@@ -271,6 +271,7 @@ void UInv_InventoryGrid::HideCursor()
 
 void UInv_InventoryGrid::SetOwningCanvas(UCanvasPanel* OwningCanvas)
 {
+	// 팝업 메뉴를 표시하기 위한 캔버스 패널 참조를 저장합니다
 	OwningCanvasPanel = OwningCanvas;
 }
 
@@ -485,42 +486,55 @@ void UInv_InventoryGrid::OnGridSlotUnhovered(int32 GridIndex, const FPointerEven
 
 void UInv_InventoryGrid::OnPopUpMenuSplit(int32 SplitAmount, int32 Index)
 {
+	// 우클릭한 아이템을 가져옵니다
 	UInv_InventoryItem* RightClickedItem = GridSlots[Index]->GetInventoryItem().Get();
 	if (!IsValid(RightClickedItem)) return;
+	// 스택 가능한 아이템만 분할할 수 있습니다
 	if (!RightClickedItem->IsStackable()) return;
 
+	// 아이템의 좌상단 인덱스를 찾습니다 (여러 슬롯을 차지하는 아이템의 경우)
 	const int32 UpperLeftIndex = GridSlots[Index]->GetUpperLeftGridIndex();
 	UInv_GridSlot* UpperLeftGridSlot = GridSlots[UpperLeftIndex];
 	const int32 StackCount = UpperLeftGridSlot->GetStackCount();
+
+	// 분할 후 남을 스택 수량을 계산합니다
 	const int32 NewStackCount = StackCount - SplitAmount;
 
+	// 그리드 슬롯과 슬롯 아이템 위젯의 스택 수량을 업데이트합니다
 	UpperLeftGridSlot->SetStackCount(NewStackCount);
 	SlottedItems.FindChecked(UpperLeftIndex)->UpdateStackCount(NewStackCount);
 
+	// 분할된 아이템을 호버 아이템으로 만듭니다
 	AssignHoverItem(RightClickedItem, UpperLeftIndex, UpperLeftIndex);
 	HoverItem->UpdateStackCount(SplitAmount);
 }
 
 void UInv_InventoryGrid::OnPopUpMenuDrop(int32 Index)
 {
+	// 우클릭한 아이템을 가져옵니다
 	UInv_InventoryItem* RightClickedItem = GridSlots[Index]->GetInventoryItem().Get();
 	if (!IsValid(RightClickedItem)) return;
 
+	// 아이템을 픽업하여 호버 아이템으로 만들고 드롭 처리를 수행합니다
 	PickUp(RightClickedItem, Index);
 	DropItem();
 }
 
 void UInv_InventoryGrid::OnPopUpMenuConsume(int32 Index)
 {
+	// 소비 기능은 아직 구현되지 않았습니다
 }
 
 void UInv_InventoryGrid::DropItem()
 {
+	// 호버 아이템이 유효한지 확인합니다
 	if (!IsValid(HoverItem)) return;
 	if (!IsValid(HoverItem->GetInventoryItem())) return;
 
-	// TODO: Tell the server to actually drop the item
+	// 서버에 아이템 드롭을 요청합니다
+	InventoryComponent->Server_DropItem(HoverItem->GetInventoryItem(), HoverItem->GetStackCount());
 
+	// 호버 아이템을 제거하고 커서를 다시 표시합니다
 	ClearHoverItem();
 	ShowCursor();
 }
@@ -971,38 +985,48 @@ void UInv_InventoryGrid::FillInStack(const int32 FillAmount, const int32 Remaind
 
 void UInv_InventoryGrid::CreateItemPopUp(const int32 GridIndex)
 {
+	// 우클릭한 아이템을 가져옵니다
 	UInv_InventoryItem* RightClickedItem = GridSlots[GridIndex]->GetInventoryItem().Get();
 	if (!IsValid(RightClickedItem)) return;
+	// 이미 팝업이 표시되어 있다면 무시합니다
 	if (IsValid(GridSlots[GridIndex]->GetItemPopUp())) return;
-	
+
+	// 아이템 팝업 위젯을 생성하고 그리드 슬롯에 참조를 저장합니다
 	ItemPopUp = CreateWidget<UInv_ItemPopUp>(this, ItemPopUpClass);
 	GridSlots[GridIndex]->SetItemPopUp(ItemPopUp);
-	
+
+	// 팝업을 캔버스에 추가하고 마우스 위치에 표시합니다
 	OwningCanvasPanel->AddChild(ItemPopUp);
 	UCanvasPanelSlot* CanvasSlot = UWidgetLayoutLibrary::SlotAsCanvasSlot(ItemPopUp);
 	const FVector2D MousePosition = UWidgetLayoutLibrary::GetMousePositionOnViewport(GetOwningPlayer());
 	CanvasSlot->SetPosition(MousePosition - ItemPopUpOffset);
 	CanvasSlot->SetSize(ItemPopUp->GetBoxSize());
 
+	// 스택 분할 옵션을 설정합니다 (스택 가능한 아이템이고 2개 이상인 경우만)
 	const int32 SliderMax = GridSlots[GridIndex]->GetStackCount() - 1;
 	if (RightClickedItem->IsStackable() && SliderMax > 0)
 	{
+		// 분할 버튼의 콜백을 바인딩하고 슬라이더 범위를 설정합니다
 		ItemPopUp->OnSplit.BindDynamic(this, &ThisClass::OnPopUpMenuSplit);
 		ItemPopUp->SetSliderParams(SliderMax, FMath::Max(1, GridSlots[GridIndex]->GetStackCount() / 2));
 	}
 	else
 	{
+		// 스택 가능하지 않거나 1개뿐이면 분할 버튼을 숨깁니다
 		ItemPopUp->CollapseSplitButton();
 	}
 
+	// 드롭 버튼의 콜백을 바인딩합니다 (모든 아이템에 대해 표시)
 	ItemPopUp->OnDrop.BindDynamic(this, &ThisClass::OnPopUpMenuDrop);
 
+	// 소비 옵션을 설정합니다 (소비 가능한 아이템만)
 	if (RightClickedItem->IsConsumable())
 	{
 		ItemPopUp->OnConsume.BindDynamic(this, &ThisClass::OnPopUpMenuConsume);
 	}
 	else
 	{
+		// 소비 가능하지 않으면 소비 버튼을 숨깁니다
 		ItemPopUp->CollapseConsumeButton();
 	}
 }

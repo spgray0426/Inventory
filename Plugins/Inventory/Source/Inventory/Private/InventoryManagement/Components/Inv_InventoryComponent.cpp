@@ -82,13 +82,17 @@ void UInv_InventoryComponent::Server_AddStacksToItem_Implementation(UInv_ItemCom
 
 void UInv_InventoryComponent::Server_DropItem_Implementation(UInv_InventoryItem* Item, int32 StackCount)
 {
+	// 드롭 후 남을 스택 수량을 계산합니다
 	const int32 NewStackCount = Item->GetTotalStackCount() - StackCount;
+	
+	// 모든 스택을 드롭하면 인벤토리에서 아이템을 완전히 제거합니다
 	if (NewStackCount <= 0)
 	{
 		InventoryList.RemoveEntry(Item);
 	}
 	else
 	{
+		// 일부만 드롭하면 남은 스택 수량을 업데이트합니다
 		Item->SetTotalStackCount(NewStackCount);
 	}
 
@@ -117,19 +121,29 @@ void UInv_InventoryComponent::AddRepSubObj(UObject* SubObj)
 
 void UInv_InventoryComponent::SpawnDroppedItem(UInv_InventoryItem* Item, int32 StackCount)
 {
+	// 플레이어 폰의 참조를 가져옵니다
 	const APawn* OwningPawn = OwningController->GetPawn();
+
+	// 플레이어의 전방 벡터를 랜덤한 각도로 회전시킵니다 (Y축 기준)
+	// 이를 통해 아이템이 플레이어 전방의 부채꼴 영역에 드롭됩니다
 	FVector RotatedForward = OwningPawn->GetActorForwardVector();
 	RotatedForward = RotatedForward.RotateAngleAxis(FMath::FRandRange(DropSpawnAngleMin, DropSpawnAngleMax), FVector::UpVector);
+
+	// 회전된 벡터 방향으로 랜덤 거리만큼 떨어진 위치를 계산합니다
 	FVector SpawnLocation = OwningPawn->GetActorLocation() + RotatedForward * FMath::FRandRange(DropSpawnDistanceMin, DropSpawnDistanceMax);
+
+	// 바닥에 가까운 위치에 스폰하기 위해 Z축 오프셋을 적용합니다
 	SpawnLocation.Z -= RelativeSpawnElevation;
 	const FRotator SpawnRotation = FRotator::ZeroRotator;
-
-	FInv_ItemManifest ItemManifest = Item->GetItemManifestMutable();
+	
+	FInv_ItemManifest& ItemManifest = Item->GetItemManifestMutable();
 	if (FInv_StackableFragment* StackableFragment = ItemManifest.GetFragmentOfTypeMutable<FInv_StackableFragment>())
 	{
 		StackableFragment->SetStackCount(StackCount);
 	}
-	ItemManifest.SpawnPickupActor(this, SpawnLocation, SpawnRotation);
+
+	// 설정된 매니페스트를 사용하여 월드에 픽업 액터를 스폰합니다
+	ItemManifest.SpawnPickupActor(GetWorld(), SpawnLocation, SpawnRotation);
 }
 
 void UInv_InventoryComponent::BeginPlay()

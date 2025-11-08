@@ -79,7 +79,18 @@ public:
 	 */
 	void HideCursor();
 
+	/**
+	 * 이 그리드를 소유하는 캔버스 패널을 설정합니다
+	 * 아이템 팝업 메뉴를 표시할 때 필요합니다
+	 * @param OwningCanvas 소유 캔버스 패널
+	 */
 	void SetOwningCanvas(UCanvasPanel* OwningCanvas);
+
+	/**
+	 * 현재 호버 아이템을 드롭합니다
+	 * 서버에 드롭 요청을 보내고 호버 아이템을 제거합니다
+	 */
+	void DropItem();
 private:
 
 	/**
@@ -478,9 +489,12 @@ private:
 	 */
 	void FillInStack(const int32 FillAmount, const int32 Remainder, const int32 Index);
 
+	/**
+	 * 아이템 팝업 메뉴를 생성하고 표시합니다
+	 * 우클릭으로 아이템을 선택했을 때 드롭, 분할, 소비 옵션을 제공합니다
+	 * @param GridIndex 우클릭한 그리드 인덱스
+	 */
 	void CreateItemPopUp(const int32 GridIndex);
-
-	void DropItem();
 
 	/**
 	 * 슬롯에 배치된 아이템이 클릭되었을 때 호출됩니다
@@ -514,12 +528,28 @@ private:
 	UFUNCTION()
 	void OnGridSlotUnhovered(int32 GridIndex, const FPointerEvent& MouseEvent);
 
+	/**
+	 * 팝업 메뉴에서 분할 옵션이 선택되었을 때 호출됩니다
+	 * 스택 가능한 아이템의 일부를 분할하여 호버 아이템으로 만듭니다
+	 * @param SplitAmount 분할할 스택 수량
+	 * @param Index 아이템이 위치한 그리드 인덱스
+	 */
 	UFUNCTION()
 	void OnPopUpMenuSplit(int32 SplitAmount, int32 Index);
 
+	/**
+	 * 팝업 메뉴에서 드롭 옵션이 선택되었을 때 호출됩니다
+	 * 아이템을 픽업하고 드롭 처리를 수행합니다
+	 * @param Index 아이템이 위치한 그리드 인덱스
+	 */
 	UFUNCTION()
 	void OnPopUpMenuDrop(int32 Index);
 
+	/**
+	 * 팝업 메뉴에서 소비 옵션이 선택되었을 때 호출됩니다
+	 * 소비 가능한 아이템을 사용합니다 (현재 미구현)
+	 * @param Index 아이템이 위치한 그리드 인덱스
+	 */
 	UFUNCTION()
 	void OnPopUpMenuConsume(int32 Index);
 
@@ -534,6 +564,7 @@ private:
 	/** 인벤토리 컴포넌트에 대한 약한 참조 */
 	TWeakObjectPtr<UInv_InventoryComponent> InventoryComponent;
 
+	/** 이 그리드를 소유하는 캔버스 패널에 대한 약한 참조 (팝업 메뉴 표시용) */
 	TWeakObjectPtr<UCanvasPanel> OwningCanvasPanel;
 	
 	/** 이 그리드가 표시하는 아이템 카테고리 (장비, 소비품, 제작 재료) */
@@ -613,12 +644,15 @@ private:
 	UPROPERTY()
 	TObjectPtr<UUserWidget> HiddenCursorWidget;
 
+	/** 아이템 팝업 메뉴 위젯의 클래스 */
 	UPROPERTY(EditAnywhere, Category = "Inventory")
 	TSubclassOf<UInv_ItemPopUp> ItemPopUpClass;
 
+	/** 현재 표시 중인 아이템 팝업 메뉴 위젯 */
 	UPROPERTY()
 	TObjectPtr<UInv_ItemPopUp> ItemPopUp;
 
+	/** 팝업 메뉴의 위치 오프셋 (마우스 위치로부터) */
 	UPROPERTY(EditAnywhere, Category = "Inventory")
 	FVector2D ItemPopUpOffset;
 	

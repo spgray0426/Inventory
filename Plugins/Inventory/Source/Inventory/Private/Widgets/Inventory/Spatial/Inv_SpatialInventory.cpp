@@ -26,6 +26,12 @@ void UInv_SpatialInventory::NativeOnInitialized()
 	ShowEquippables();
 }
 
+FReply UInv_SpatialInventory::NativeOnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
+{
+	ActiveGrid->DropItem();
+	return FReply::Handled();
+}
+
 FInv_SlotAvailabilityResult UInv_SpatialInventory::HasRoomForItem(UInv_ItemComponent* ItemComponent) const
 {
 	// 아이템 카테고리에 따라 해당 그리드에서 공간을 확인합니다
