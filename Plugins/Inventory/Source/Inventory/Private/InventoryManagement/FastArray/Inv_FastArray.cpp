@@ -73,18 +73,13 @@ UInv_InventoryItem* FInv_InventoryFastArray::AddEntry(UInv_InventoryItem* InItem
 
 void FInv_InventoryFastArray::RemoveEntry(UInv_InventoryItem* InItem)
 {
-	check(OwnerComponent);
-	AActor* OwningActor = OwnerComponent->GetOwner();
-	check(OwningActor->HasAuthority());
-	
 	for (auto EntryIt = Entries.CreateIterator(); EntryIt; ++EntryIt)
 	{
 		FInv_InventoryEntry& Entry = *EntryIt;
 		if (Entry.Item == InItem)
 		{
 			EntryIt.RemoveCurrent();
-			MarkItemDirty(Entry);
-			break;
+			MarkArrayDirty();
 		}
 	}
 }
