@@ -63,6 +63,7 @@ struct INVENTORY_API FInv_ItemManifest
 	template<typename T> requires std::derived_from<T, FInv_ItemFragment>
 	T* GetFragmentOfTypeMutable();
 
+	void SpawnPickupActor(const UObject* WorldContextObject, const FVector& SpawnLocation, const FRotator& SpawnRotation);
 private:
 
 	/** 이 아이템을 구성하는 프래그먼트들의 배열 (그리드, 이미지, 스택 등) */
@@ -76,6 +77,9 @@ private:
 	/** 이 아이템의 고유 타입을 나타내는 GameplayTag (예: Axe, Sword, Potion 등) */
 	UPROPERTY(EditAnywhere, Category = "Inventory")
 	FGameplayTag ItemType;
+
+	UPROPERTY(EditAnywhere, Category = "Inventory")
+	TSubclassOf<AActor> PickupActorClass;
 };
 
 /**

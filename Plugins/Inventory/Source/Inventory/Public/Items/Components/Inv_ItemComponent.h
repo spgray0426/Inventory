@@ -27,6 +27,8 @@ public:
 	 */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	void InitItemManifest(FInv_ItemManifest CopyOfManifest);
+	
 	/**
 	 * 아이템을 주웠을 때 표시할 메시지를 가져옵니다
 	 * @return 픽업 메시지 문자열
