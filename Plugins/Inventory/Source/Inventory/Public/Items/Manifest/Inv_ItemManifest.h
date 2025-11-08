@@ -63,6 +63,13 @@ struct INVENTORY_API FInv_ItemManifest
 	template<typename T> requires std::derived_from<T, FInv_ItemFragment>
 	T* GetFragmentOfTypeMutable();
 
+	/**
+	 * 이 매니페스트를 사용하여 픽업 액터를 월드에 스폰합니다
+	 * 아이템이 드롭되거나 월드에 배치될 때 사용됩니다
+	 * @param WorldContextObject 월드 컨텍스트 객체 (스폰 위치의 월드를 얻기 위함)
+	 * @param SpawnLocation 픽업 액터를 스폰할 위치
+	 * @param SpawnRotation 픽업 액터의 초기 회전
+	 */
 	void SpawnPickupActor(const UObject* WorldContextObject, const FVector& SpawnLocation, const FRotator& SpawnRotation);
 private:
 
@@ -78,6 +85,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Inventory")
 	FGameplayTag ItemType;
 
+	/** 월드에 스폰될 픽업 액터의 클래스 (드롭되거나 배치될 때 사용) */
 	UPROPERTY(EditAnywhere, Category = "Inventory")
 	TSubclassOf<AActor> PickupActorClass;
 };

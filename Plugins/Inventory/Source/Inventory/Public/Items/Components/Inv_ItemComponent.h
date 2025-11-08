@@ -27,8 +27,13 @@ public:
 	 */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	/**
+	 * 아이템 매니페스트를 초기화합니다
+	 * 드롭된 아이템이나 동적으로 생성된 픽업 액터에 아이템 정보를 설정할 때 사용됩니다
+	 * @param CopyOfManifest 설정할 아이템 매니페스트의 복사본
+	 */
 	void InitItemManifest(FInv_ItemManifest CopyOfManifest);
-	
+
 	/**
 	 * 아이템을 주웠을 때 표시할 메시지를 가져옵니다
 	 * @return 픽업 메시지 문자열

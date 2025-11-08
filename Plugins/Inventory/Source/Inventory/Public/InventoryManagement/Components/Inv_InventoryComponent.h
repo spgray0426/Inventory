@@ -65,9 +65,15 @@ public:
 	UFUNCTION(Server, Reliable)
 	void Server_AddStacksToItem(UInv_ItemComponent* ItemComponent, int32 StackCount, int32 Remainder);
 
+	/**
+	 * 서버 RPC: 인벤토리에서 아이템을 드롭합니다
+	 * 지정된 스택 수량만큼 인벤토리에서 제거하고 월드에 스폰합니다
+	 * @param Item 드롭할 인벤토리 아이템
+	 * @param StackCount 드롭할 스택 수량
+	 */
 	UFUNCTION(Server, Reliable)
 	void Server_DropItem(UInv_InventoryItem* Item, int32 StackCount);
-	
+
 	/**
 	 * 인벤토리 메뉴를 열거나 닫습니다
 	 */
@@ -78,7 +84,13 @@ public:
 	 * @param SubObj 추가할 서브 객체
 	 */
 	void AddRepSubObj(UObject* SubObj);
-	
+
+	/**
+	 * 드롭된 아이템을 월드에 스폰합니다
+	 * 플레이어의 전방에 랜덤한 각도와 거리로 아이템을 생성합니다
+	 * @param Item 드롭할 인벤토리 아이템
+	 * @param StackCount 드롭할 스택 수량
+	 */
 	void SpawnDroppedItem(UInv_InventoryItem* Item, int32 StackCount);
 	
 	/** 아이템이 추가될 때 호출되는 델리게이트 */
@@ -132,18 +144,23 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Inventory")
 	TSubclassOf<UInv_InventoryBase> InventoryMenuClass;
 
+	/** 아이템 드롭 시 최소 회전 각도 (플레이어의 전방 벡터 기준, Y축 회전) */
 	UPROPERTY(EditAnywhere, Category = "Inventory")
 	float DropSpawnAngleMin {-85.f};
 
+	/** 아이템 드롭 시 최대 회전 각도 (플레이어의 전방 벡터 기준, Y축 회전) */
 	UPROPERTY(EditAnywhere, Category = "Inventory")
 	float DropSpawnAngleMax {85.f};
 
+	/** 아이템 드롭 시 최소 거리 (플레이어로부터) */
 	UPROPERTY(EditAnywhere, Category = "Inventory")
-	float DropSpawnDistanceMin {10.f};
+	float DropSpawnDistanceMin {50.f};
 
+	/** 아이템 드롭 시 최대 거리 (플레이어로부터) */
 	UPROPERTY(EditAnywhere, Category = "Inventory")
-	float DropSpawnDistanceMax {50.f};
+	float DropSpawnDistanceMax {125.f};
 
+	/** 아이템 드롭 시 상대적 높이 오프셋 (플레이어 위치 기준 아래로) */
 	UPROPERTY(EditAnywhere, Category = "Inventory")
 	float RelativeSpawnElevation = {70.f};
 	

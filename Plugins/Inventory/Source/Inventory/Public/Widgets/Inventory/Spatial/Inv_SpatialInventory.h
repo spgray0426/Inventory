@@ -27,7 +27,8 @@ public:
 	 * 버튼 이벤트를 바인딩하고 초기 그리드를 설정합니다
 	 */
 	virtual void NativeOnInitialized() override;
-
+	virtual FReply NativeOnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
+	
 	/**
 	 * 아이템을 배치할 공간이 있는지 확인합니다
 	 * 현재 활성화된 그리드에서 공간을 확인합니다
