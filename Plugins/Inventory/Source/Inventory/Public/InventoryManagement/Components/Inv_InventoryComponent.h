@@ -65,6 +65,9 @@ public:
 	UFUNCTION(Server, Reliable)
 	void Server_AddStacksToItem(UInv_ItemComponent* ItemComponent, int32 StackCount, int32 Remainder);
 
+	UFUNCTION(Server, Reliable)
+	void Server_DropItem(UInv_InventoryItem* Item, int32 StackCount);
+	
 	/**
 	 * 인벤토리 메뉴를 열거나 닫습니다
 	 */
@@ -75,7 +78,9 @@ public:
 	 * @param SubObj 추가할 서브 객체
 	 */
 	void AddRepSubObj(UObject* SubObj);
-
+	
+	void SpawnDroppedItem(UInv_InventoryItem* Item, int32 StackCount);
+	
 	/** 아이템이 추가될 때 호출되는 델리게이트 */
 	FInventoryItemChange OnItemAdded;
 
@@ -122,12 +127,29 @@ private:
 	/** 인벤토리 메뉴 위젯 인스턴스 */
 	UPROPERTY()
 	TObjectPtr<UInv_InventoryBase> InventoryMenu;
-
+	
 	/** 인벤토리 메뉴 위젯 클래스 */
 	UPROPERTY(EditAnywhere, Category = "Inventory")
 	TSubclassOf<UInv_InventoryBase> InventoryMenuClass;
 
+	UPROPERTY(EditAnywhere, Category = "Inventory")
+	float DropSpawnAngleMin {-85.f};
+
+	UPROPERTY(EditAnywhere, Category = "Inventory")
+	float DropSpawnAngleMax {85.f};
+
+	UPROPERTY(EditAnywhere, Category = "Inventory")
+	float DropSpawnDistanceMin {10.f};
+
+	UPROPERTY(EditAnywhere, Category = "Inventory")
+	float DropSpawnDistanceMax {50.f};
+
+	UPROPERTY(EditAnywhere, Category = "Inventory")
+	float RelativeSpawnElevation = {70.f};
+	
 	/** 인벤토리 메뉴가 열려있는지 여부 */
 	bool bInventoryMenuOpen;
+
+	
 
 };

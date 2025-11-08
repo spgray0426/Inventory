@@ -276,47 +276,6 @@ private:
 	 */
 	UFUNCTION()
 	void AddStacks(const FInv_SlotAvailabilityResult& Result);
-
-	/**
-	 * 슬롯에 배치된 아이템이 클릭되었을 때 호출됩니다
-	 * @param GridIndex 그리드 인덱스
-	 * @param MouseEvent 마우스 이벤트
-	 */
-	UFUNCTION()
-	void OnSlottedItemClicked(int32 GridIndex, const FPointerEvent& MouseEvent);
-
-	/**
-	 * 그리드 슬롯이 클릭되었을 때 호출됩니다
-	 * @param GridIndex 그리드 인덱스
-	 * @param MouseEvent 마우스 이벤트
-	 */
-	UFUNCTION()
-	void OnGridSlotClicked(int32 GridIndex, const FPointerEvent& MouseEvent);
-
-	/**
-	 * 그리드 슬롯에 마우스가 올라갔을 때 호출됩니다
-	 * @param GridIndex 그리드 인덱스
-	 * @param MouseEvent 마우스 이벤트
-	 */
-	UFUNCTION()
-	void OnGridSlotHovered(int32 GridIndex, const FPointerEvent& MouseEvent);
-
-	/**
-	 * 그리드 슬롯에서 마우스가 벗어났을 때 호출됩니다
-	 * @param GridIndex 그리드 인덱스
-	 * @param MouseEvent 마우스 이벤트
-	 */
-	UFUNCTION()
-	void OnGridSlotUnhovered(int32 GridIndex, const FPointerEvent& MouseEvent);
-
-	UFUNCTION()
-	void OnPopUpMenuSplit(int32 SplitAmount, int32 Index);
-
-	UFUNCTION()
-	void OnPopUpMenuDrop(int32 Index);
-
-	UFUNCTION()
-	void OnPopUpMenuConsume(int32 Index);
 	
 	/**
 	 * 마우스 이벤트가 오른쪽 클릭인지 확인합니다
@@ -382,13 +341,6 @@ private:
 	 * @return 타일 사분면 (좌상단, 우상단, 좌하단, 우하단)
 	 */
 	EInv_TileQuadrant CalculateTileQuadrant(const FVector2D& CanvasPosition, const FVector2D& MousePosition) const;
-
-	/**
-	 * 타일 파라미터가 업데이트되었을 때 호출됩니다
-	 * 호버 아이템의 배치 가능 여부를 확인하고 해당 위치의 슬롯들을 하이라이트합니다
-	 * @param Parameters 업데이트된 타일 파라미터 (좌표, 인덱스, 사분면 포함)
-	 */
-	void OnTileParametersUpdated(const FInv_TileParameters& Parameters);
 
 	/**
 	 * 아이템의 시작 좌표를 계산합니다 (사분면 기반 배치)
@@ -527,6 +479,57 @@ private:
 	void FillInStack(const int32 FillAmount, const int32 Remainder, const int32 Index);
 
 	void CreateItemPopUp(const int32 GridIndex);
+
+	void DropItem();
+
+	/**
+	 * 슬롯에 배치된 아이템이 클릭되었을 때 호출됩니다
+	 * @param GridIndex 그리드 인덱스
+	 * @param MouseEvent 마우스 이벤트
+	 */
+	UFUNCTION()
+	void OnSlottedItemClicked(int32 GridIndex, const FPointerEvent& MouseEvent);
+
+	/**
+	 * 그리드 슬롯이 클릭되었을 때 호출됩니다
+	 * @param GridIndex 그리드 인덱스
+	 * @param MouseEvent 마우스 이벤트
+	 */
+	UFUNCTION()
+	void OnGridSlotClicked(int32 GridIndex, const FPointerEvent& MouseEvent);
+
+	/**
+	 * 그리드 슬롯에 마우스가 올라갔을 때 호출됩니다
+	 * @param GridIndex 그리드 인덱스
+	 * @param MouseEvent 마우스 이벤트
+	 */
+	UFUNCTION()
+	void OnGridSlotHovered(int32 GridIndex, const FPointerEvent& MouseEvent);
+
+	/**
+	 * 그리드 슬롯에서 마우스가 벗어났을 때 호출됩니다
+	 * @param GridIndex 그리드 인덱스
+	 * @param MouseEvent 마우스 이벤트
+	 */
+	UFUNCTION()
+	void OnGridSlotUnhovered(int32 GridIndex, const FPointerEvent& MouseEvent);
+
+	UFUNCTION()
+	void OnPopUpMenuSplit(int32 SplitAmount, int32 Index);
+
+	UFUNCTION()
+	void OnPopUpMenuDrop(int32 Index);
+
+	UFUNCTION()
+	void OnPopUpMenuConsume(int32 Index);
+
+	/**
+	 * 타일 파라미터가 업데이트되었을 때 호출됩니다
+	 * 호버 아이템의 배치 가능 여부를 확인하고 해당 위치의 슬롯들을 하이라이트합니다
+	 * @param Parameters 업데이트된 타일 파라미터 (좌표, 인덱스, 사분면 포함)
+	 */
+	void OnTileParametersUpdated(const FInv_TileParameters& Parameters);
+
 	
 	/** 인벤토리 컴포넌트에 대한 약한 참조 */
 	TWeakObjectPtr<UInv_InventoryComponent> InventoryComponent;
