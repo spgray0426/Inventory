@@ -34,7 +34,20 @@ public:
 	 * @return 이벤트 처리 결과
 	 */
 	virtual FReply NativeOnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
+
+	/**
+	 * 마우스가 위젯 위로 들어왔을 때 호출됩니다
+	 * 아이템 설명 표시를 트리거합니다
+	 * @param MyGeometry 위젯의 지오메트리 정보
+	 * @param MouseEvent 마우스 이벤트 정보
+	 */
 	virtual void NativeOnMouseEnter(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
+
+	/**
+	 * 마우스가 위젯에서 벗어났을 때 호출됩니다
+	 * 아이템 설명 숨김을 트리거합니다
+	 * @param MouseEvent 마우스 이벤트 정보
+	 */
 	virtual void NativeOnMouseLeave(const FPointerEvent& MouseEvent) override;
 	/** 아이템이 스택 가능한지 확인합니다 */
 	bool IsStackable() const { return bIsStackable; }

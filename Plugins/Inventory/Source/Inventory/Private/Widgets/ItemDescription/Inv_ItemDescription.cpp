@@ -7,5 +7,7 @@
 
 FVector2D UInv_ItemDescription::GetBoxSize() const
 {
+    // SizeBox의 desired size를 반환하여 콘텐츠에 맞는 실제 크기를 가져옵니다
+    // 이 크기는 화면 경계 내에 위젯을 배치하기 위한 계산에 사용됩니다
     return SizeBox->GetDesiredSize();
 }

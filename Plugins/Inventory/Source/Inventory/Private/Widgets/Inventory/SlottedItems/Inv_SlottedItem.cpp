@@ -16,11 +16,13 @@ FReply UInv_SlottedItem::NativeOnMouseButtonDown(const FGeometry& MyGeometry, co
 
 void UInv_SlottedItem::NativeOnMouseEnter(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
 {
+	// 아이템에 마우스를 올렸을 때 정적 함수를 통해 아이템 설명 표시를 요청합니다
 	UInv_InventoryStatics::ItemHovered(GetOwningPlayer(), InventoryItem.Get());
 }
 
 void UInv_SlottedItem::NativeOnMouseLeave(const FPointerEvent& MouseEvent)
 {
+	// 아이템에서 마우스를 뗐을 때 정적 함수를 통해 아이템 설명 숨김을 요청합니다
 	UInv_InventoryStatics::ItemUnhovered(GetOwningPlayer());
 }
 

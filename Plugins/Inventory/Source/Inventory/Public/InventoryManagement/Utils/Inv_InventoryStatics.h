@@ -53,9 +53,20 @@ public:
 	template<typename T, typename FuncT>
 	static void ForEach2D(TArray<T>& Array, int32 Index, const FIntPoint& Range2D, int32 GridColumns,const FuncT& Function);
 
+	/**
+	 * 아이템에 마우스를 올렸을 때 호출됩니다
+	 * 인벤토리 UI에 아이템 설명을 표시하는 이벤트를 트리거합니다
+	 * @param PC 플레이어 컨트롤러
+	 * @param Item 마우스를 올린 아이템
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	static void ItemHovered(APlayerController* PC, UInv_InventoryItem* Item);
 
+	/**
+	 * 아이템에서 마우스를 뗐을 때 호출됩니다
+	 * 인벤토리 UI의 아이템 설명을 숨기는 이벤트를 트리거합니다
+	 * @param PC 플레이어 컨트롤러
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	static void ItemUnhovered(APlayerController* PC);
 };

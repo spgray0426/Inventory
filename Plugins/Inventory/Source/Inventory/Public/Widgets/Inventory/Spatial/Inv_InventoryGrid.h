@@ -92,6 +92,11 @@ public:
 	 */
 	void DropItem();
 
+	/**
+	 * 현재 드래그 중인 호버 아이템이 있는지 확인합니다
+	 * 드래그 중일 때는 아이템 설명을 표시하지 않기 위해 사용됩니다
+	 * @return 호버 아이템이 있으면 true
+	 */
 	bool HasHoverItem() const;
 private:
 
