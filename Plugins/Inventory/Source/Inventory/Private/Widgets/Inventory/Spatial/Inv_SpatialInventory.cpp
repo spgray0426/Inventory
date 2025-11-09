@@ -38,6 +38,8 @@ void UInv_SpatialInventory::NativeTick(const FGeometry& MyGeometry, float InDelt
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
 
+	// 아이템 설명 위젯이 생성되어 있으면 매 프레임 위치를 업데이트합니다
+	// 마우스 커서를 따라다니도록 하기 위함입니다
 	if (!IsValid(ItemDescription)) return;
 	SetItemDescriptionSizeAndPosition(ItemDescription, CanvasPanel);
 }
@@ -61,28 +63,38 @@ FInv_SlotAvailabilityResult UInv_SpatialInventory::HasRoomForItem(UInv_ItemCompo
 
 void UInv_SpatialInventory::OnItemHovered(UInv_InventoryItem* Item)
 {
+	// 아이템 설명 위젯을 가져옵니다 (없으면 생성)
 	UInv_ItemDescription* DescriptionWidget = GetItemDescription();
+	// 일단 숨김 상태로 설정합니다
 	DescriptionWidget->SetVisibility(ESlateVisibility::Collapsed);
 
+	// 이전 타이머가 있다면 정리합니다
 	GetOwningPlayer()->GetWorldTimerManager().ClearTimer(DescriptionTimer);
 
+	// 지연 후에 설명을 표시하는 람다를 타이머 델리게이트에 바인딩합니다
+	// 이를 통해 마우스를 빠르게 움직일 때는 설명이 표시되지 않습니다
 	FTimerDelegate DescriptionTimerDelegate;
 	DescriptionTimerDelegate.BindLambda([this]()
 	{
+		// HitTestInvisible로 설정하여 마우스 이벤트를 방해하지 않으면서 보이도록 합니다
 		GetItemDescription()->SetVisibility(ESlateVisibility::HitTestInvisible);
 	});
 
+	// 설정된 지연 시간 후에 타이머를 실행합니다 (한 번만)
 	GetOwningPlayer()->GetWorldTimerManager().SetTimer(DescriptionTimer, DescriptionTimerDelegate, DescriptionTimerDelay, false);
 }
 
 void UInv_SpatialInventory::OnItemUnHovered()
 {
+	// 아이템 설명을 즉시 숨깁니다
 	GetItemDescription()->SetVisibility(ESlateVisibility::Collapsed);
+	// 실행 대기 중인 타이머를 취소합니다
 	GetOwningPlayer()->GetWorldTimerManager().ClearTimer(DescriptionTimer);
 }
 
 bool UInv_SpatialInventory::HasHoverItem() const
 {
+	// 세 개의 그리드 중 하나라도 호버 아이템(드래그 중인 아이템)이 있으면 true를 반환합니다
 	if (Grid_Equippables->HasHoverItem()) return true;
 	if (Grid_Consumables->HasHoverItem()) return true;
 	if (Grid_Craftables->HasHoverItem()) return true;
@@ -133,16 +145,21 @@ void UInv_SpatialInventory::SetActiveGrid(UInv_InventoryGrid* Grid, UButton* But
 
 void UInv_SpatialInventory::SetItemDescriptionSizeAndPosition(UInv_ItemDescription* Description, UCanvasPanel* Canvas) const
 {
+	// 캔버스 패널 슬롯을 가져옵니다
 	UCanvasPanelSlot* ItemDescriptionCPS = UWidgetLayoutLibrary::SlotAsCanvasSlot(Description);
 	if (!IsValid(ItemDescriptionCPS)) return;
 
+	// 설명 위젯의 크기를 가져와서 설정합니다
 	const FVector2D ItemDescriptionSize = Description->GetBoxSize();
 	ItemDescriptionCPS->SetSize(ItemDescriptionSize);
 
+	// 마우스 커서 위치를 기준으로 화면 경계 내에서 위치를 보정합니다
+	// 이렇게 하면 설명 위젯이 화면 밖으로 나가지 않습니다
 	FVector2D ClampedPosition = UInv_WidgetUtils::GetClampedWidgetPosition(
 		UInv_WidgetUtils::GetWidgetSize(Canvas),
 		ItemDescriptionSize,
 		UWidgetLayoutLibrary::GetMousePositionOnViewport(GetOwningPlayer()));
 
+	// 계산된 위치를 설정합니다
 	ItemDescriptionCPS->SetPosition(ClampedPosition);
 }

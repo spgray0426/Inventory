@@ -43,5 +43,13 @@ public:
 	// @return - 2D 좌표 (x,y)
 	static FIntPoint GetPositionFromIndex(const int32 Index, const int32 Columns);
 
+	/**
+	 * 위젯이 화면 경계를 벗어나지 않도록 위치를 보정합니다
+	 * 아이템 설명 위젯을 마우스 커서 근처에 표시할 때 화면 밖으로 나가지 않도록 합니다
+	 * @param Boundary 화면 경계 크기 (뷰포트 크기)
+	 * @param WidgetSize 배치할 위젯의 크기
+	 * @param MousePos 마우스 커서 위치
+	 * @return 화면 경계 내로 보정된 위젯 위치
+	 */
 	static FVector2D GetClampedWidgetPosition(const FVector2D& Boundary, const FVector2D& WidgetSize, const FVector2D& MousePos);
 };

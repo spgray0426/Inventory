@@ -20,26 +20,26 @@ FVector2D UInv_WidgetUtils::GetClampedWidgetPosition(const FVector2D& Boundary, 
 {
 	FVector2D ClampedPosition = MousePos;
 
-	// Adjust horizontal position to ensure that the widget stays within the boundary
-	if (MousePos.X + WidgetSize.X > Boundary.X) // Widget exceeds the right edge
+	// 가로 위치를 조정하여 위젯이 경계 내에 유지되도록 합니다
+	if (MousePos.X + WidgetSize.X > Boundary.X) // 위젯이 오른쪽 가장자리를 초과하는 경우
 	{
 		ClampedPosition.X = Boundary.X - WidgetSize.X;
 	}
-	if (MousePos.X < 0.f) // Widget exceeds the left edge
+	if (MousePos.X < 0.f) // 위젯이 왼쪽 가장자리를 초과하는 경우
 	{
 		ClampedPosition.X = 0.f;
 	}
 
-	// Adjust vertical position to ensure that the widget stays within the boundary
-	if (MousePos.Y + WidgetSize.Y > Boundary.Y) // Widget exceeds the bottom edge
+	// 세로 위치를 조정하여 위젯이 경계 내에 유지되도록 합니다
+	if (MousePos.Y + WidgetSize.Y > Boundary.Y) // 위젯이 하단 가장자리를 초과하는 경우
 	{
 		ClampedPosition.Y = Boundary.Y - WidgetSize.Y;
 	}
-	if (MousePos.Y < 0.f) // Widget exceeds the top edge
+	if (MousePos.Y < 0.f) // 위젯이 상단 가장자리를 초과하는 경우
 	{
 		ClampedPosition.Y = 0.f;
 	}
-	
+
 	return ClampedPosition;
 }
 
