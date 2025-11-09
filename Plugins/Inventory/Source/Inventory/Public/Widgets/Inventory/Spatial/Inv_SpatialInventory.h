@@ -3,9 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Components/CanvasPanel.h"
 #include "Widgets/Inventory/InventoryBase/Inv_InventoryBase.h"
+#include "Widgets/ItemDescription/Inv_ItemDescription.h"
 #include "Inv_SpatialInventory.generated.h"
 
+class UInv_ItemDescription;
 class UCanvasPanel;
 class UButton;
 class UWidgetSwitcher;
@@ -28,7 +31,7 @@ public:
 	 */
 	virtual void NativeOnInitialized() override;
 	virtual FReply NativeOnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
-	
+	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 	
 	/**
 	 * 아이템을 배치할 공간이 있는지 확인합니다
@@ -77,6 +80,10 @@ private:
 	 */
 	void SetActiveGrid(UInv_InventoryGrid* Grid, UButton* Button);
 
+	UInv_ItemDescription* GetItemDescription();
+
+	void SetItemDescriptionSizeAndPosition(UInv_ItemDescription* Description, UCanvasPanel* Canvas) const;
+	
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UCanvasPanel> CanvasPanel;
 	
@@ -110,4 +117,27 @@ private:
 
 	/** 현재 활성화된 그리드에 대한 약한 참조 */
 	TWeakObjectPtr<UInv_InventoryGrid> ActiveGrid;
+
+	UPROPERTY(EditAnywhere, Category = "Inventory")
+	TSubclassOf<UInv_ItemDescription> ItemDescriptionClass;
+
+	UPROPERTY()
+	TObjectPtr<UInv_ItemDescription> ItemDescription;
+
+	FTimerHandle DescriptionTimer;
+
+	UPROPERTY(EditAnywhere, Category = "Inventory")
+	float DescriptionTimerDelay {0.5f};
+
+	
 };
+
+inline UInv_ItemDescription* UInv_SpatialInventory::GetItemDescription()
+{
+	if (!IsValid(ItemDescription))
+	{
+		ItemDescription = CreateWidget<UInv_ItemDescription>(GetOwningPlayer(), ItemDescriptionClass);
+		CanvasPanel->AddChild(ItemDescription);
+	}
+	return ItemDescription;
+}

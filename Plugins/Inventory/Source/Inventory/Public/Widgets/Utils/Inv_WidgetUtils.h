@@ -42,4 +42,6 @@ public:
 	// @param Columns - 그리드의 열 수
 	// @return - 2D 좌표 (x,y)
 	static FIntPoint GetPositionFromIndex(const int32 Index, const int32 Columns);
+
+	static FVector2D GetClampedWidgetPosition(const FVector2D& Boundary, const FVector2D& WidgetSize, const FVector2D& MousePos);
 };
