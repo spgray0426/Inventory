@@ -82,7 +82,7 @@ private:
 	EInv_ItemCategory ItemCategory {EInv_ItemCategory::None};
 
 	/** 이 아이템의 고유 타입을 나타내는 GameplayTag (예: Axe, Sword, Potion 등) */
-	UPROPERTY(EditAnywhere, Category = "Inventory")
+	UPROPERTY(EditAnywhere, Category = "Inventory", meta = (Categories = "GameItems"))
 	FGameplayTag ItemType;
 
 	/** 월드에 스폰될 픽업 액터의 클래스 (드롭되거나 배치될 때 사용) */

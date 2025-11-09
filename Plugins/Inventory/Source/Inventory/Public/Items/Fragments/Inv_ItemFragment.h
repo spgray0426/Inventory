@@ -5,6 +5,7 @@
 
 #include "Inv_ItemFragment.generated.h"
 
+class APlayerController;
 /**
  * 아이템 컴포지션 시스템의 기본 프래그먼트 구조체
  * 아이템은 여러 프래그먼트로 구성되며, 각 프래그먼트는 특정 동작이나 속성을 정의합니다
@@ -48,7 +49,7 @@ struct FInv_ItemFragment
 private:
 
 	/** 이 프래그먼트 타입을 고유하게 식별하는 GameplayTag */
-	UPROPERTY(EditAnywhere, Category = "Inventory")
+	UPROPERTY(EditAnywhere, Category = "Inventory", meta = (Categories = "FragmentTags"))
 	FGameplayTag FrgmentTag = FGameplayTag::EmptyTag;
 };
 
@@ -159,4 +160,64 @@ private:
 	/** 이 스택의 현재 아이템 개수. 기본값은 1 */
 	UPROPERTY(EditAnywhere, Category = "Inventory")
 	int32 StackCount{1};
+};
+
+/**
+ * 소비 가능 아이템의 기본 프래그먼트
+ * 아이템이 소비될 때의 동작을 정의합니다
+ * 파생 구조체에서 OnConsume을 오버라이드하여 구체적인 소비 효과를 구현합니다
+ */
+USTRUCT(BlueprintType)
+struct FInv_ConsumableFragment : public FInv_ItemFragment
+{
+	GENERATED_BODY()
+
+	/**
+	 * 아이템이 소비될 때 호출되는 가상 함수
+	 * 파생 구조체에서 오버라이드하여 체력 회복, 마나 회복 등의 효과를 구현합니다
+	 * @param PC 아이템을 소비하는 플레이어 컨트롤러
+	 */
+	virtual void OnConsume(APlayerController* PC) {}
+};
+
+/**
+ * 체력 회복 포션 프래그먼트
+ * 소비 시 플레이어의 체력을 회복시키는 기능을 제공합니다
+ */
+USTRUCT(BlueprintType)
+struct FInv_HealthPotionFragment : public FInv_ConsumableFragment
+{
+	GENERATED_BODY()
+
+	/** 이 포션이 회복시키는 체력 수치. 기본값은 20 */
+	UPROPERTY(EditAnywhere, Category = "Inventory")
+	float HealAmount = 20.f;
+
+	/**
+	 * 체력 포션을 소비합니다
+	 * 플레이어의 체력을 HealAmount만큼 회복시킵니다
+	 * @param PC 아이템을 소비하는 플레이어 컨트롤러
+	 */
+	virtual void OnConsume(APlayerController* PC) override;
+};
+
+/**
+ * 마나 회복 포션 프래그먼트
+ * 소비 시 플레이어의 마나를 회복시키는 기능을 제공합니다
+ */
+USTRUCT(BlueprintType)
+struct FInv_ManaPotionFragment : public FInv_ConsumableFragment
+{
+	GENERATED_BODY()
+
+	/** 이 포션이 회복시키는 마나 수치. 기본값은 20 */
+	UPROPERTY(EditAnywhere, Category = "Inventory")
+	float ManaAmount = 20.f;
+
+	/**
+	 * 마나 포션을 소비합니다
+	 * 플레이어의 마나를 ManaAmount만큼 회복시킵니다
+	 * @param PC 아이템을 소비하는 플레이어 컨트롤러
+	 */
+	virtual void OnConsume(APlayerController* PC) override;
 };

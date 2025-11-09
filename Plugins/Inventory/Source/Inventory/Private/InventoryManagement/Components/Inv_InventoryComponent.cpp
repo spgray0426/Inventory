@@ -99,6 +99,30 @@ void UInv_InventoryComponent::Server_DropItem_Implementation(UInv_InventoryItem*
 	SpawnDroppedItem(Item, StackCount);
 }
 
+void UInv_InventoryComponent::Server_ConsumeItem_Implementation(UInv_InventoryItem* Item)
+{
+	// 아이템의 스택 수량을 1 감소시킵니다
+	const int32 NewStackCount = Item->GetTotalStackCount() - 1;
+
+	// 스택이 0 이하가 되면 인벤토리에서 아이템을 완전히 제거합니다
+	if (NewStackCount <= 0)
+	{
+		InventoryList.RemoveEntry(Item);
+	}
+	else
+	{
+		// 스택이 남아있으면 새로운 수량으로 업데이트합니다
+		Item->SetTotalStackCount(NewStackCount);
+	}
+
+	// 아이템의 소비 가능 프래그먼트를 찾아서 OnConsume을 호출합니다
+	// 이를 통해 체력 회복, 마나 회복 등의 효과가 실행됩니다
+	if (FInv_ConsumableFragment* ConsumableFragment = Item->GetItemManifestMutable().GetFragmentOfTypeMutable<FInv_ConsumableFragment>())
+	{
+		ConsumableFragment->OnConsume(OwningController.Get());
+	}
+}
+
 void UInv_InventoryComponent::ToggleInventoryMenu()
 {
 	if (bInventoryMenuOpen)

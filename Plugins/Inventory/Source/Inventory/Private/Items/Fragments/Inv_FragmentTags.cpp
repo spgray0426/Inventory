@@ -15,4 +15,7 @@ namespace FragmentTags
 
 	/** 스택 기능 프래그먼트를 식별하기 위한 스택 가능 프래그먼트 태그 정의 */
 	UE_DEFINE_GAMEPLAY_TAG(StackableFragment, "FragmentTags.StackableFragment")
+
+	/** 소비 가능 프래그먼트를 식별하기 위한 소비 가능 프래그먼트 태그 정의 */
+	UE_DEFINE_GAMEPLAY_TAG(ConsumableFragment, "FragmentTags.ConsumableFragment")
 }

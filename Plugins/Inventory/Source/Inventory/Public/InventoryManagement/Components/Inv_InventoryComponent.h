@@ -75,6 +75,15 @@ public:
 	void Server_DropItem(UInv_InventoryItem* Item, int32 StackCount);
 
 	/**
+	 * 서버 RPC: 인벤토리에서 아이템을 소비합니다
+	 * 스택 수량을 1 감소시키고, 소비 가능 프래그먼트의 OnConsume을 호출합니다
+	 * 스택이 0이 되면 인벤토리에서 아이템을 제거합니다
+	 * @param Item 소비할 인벤토리 아이템
+	 */
+	UFUNCTION(Server, Reliable)
+	void Server_ConsumeItem(UInv_InventoryItem* Item);
+	
+	/**
 	 * 인벤토리 메뉴를 열거나 닫습니다
 	 */
 	void ToggleInventoryMenu();

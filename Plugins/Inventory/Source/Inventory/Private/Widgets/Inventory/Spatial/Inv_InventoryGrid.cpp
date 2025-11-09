@@ -522,7 +522,28 @@ void UInv_InventoryGrid::OnPopUpMenuDrop(int32 Index)
 
 void UInv_InventoryGrid::OnPopUpMenuConsume(int32 Index)
 {
-	// 소비 기능은 아직 구현되지 않았습니다
+	// 우클릭한 그리드 슬롯의 아이템을 가져옵니다
+	UInv_InventoryItem* RightClickedItem = GridSlots[Index]->GetInventoryItem().Get();
+	if (!IsValid(RightClickedItem)) return;
+
+	// 아이템의 왼쪽 상단 인덱스를 찾아서 해당 슬롯을 가져옵니다
+	// (아이템이 여러 칸을 차지할 수 있으므로 항상 왼쪽 상단 슬롯에서 스택 수를 관리합니다)
+	const int32 UpperLeftIndex = GridSlots[Index]->GetUpperLeftGridIndex();
+	UInv_GridSlot* UpperLeftGridSlot = GridSlots[UpperLeftIndex];
+	const int32 NewStackCount = UpperLeftGridSlot->GetStackCount() - 1;
+
+	// UI에서 스택 수를 업데이트합니다
+	UpperLeftGridSlot->SetStackCount(NewStackCount);
+	SlottedItems.FindChecked(UpperLeftIndex)->UpdateStackCount(NewStackCount);
+
+	// 서버에 아이템 소비를 요청합니다 (실제 인벤토리 데이터 업데이트 및 소비 효과 실행)
+	InventoryComponent->Server_ConsumeItem(RightClickedItem);
+
+	// 스택이 0 이하가 되면 그리드에서 아이템을 제거합니다
+	if (NewStackCount <= 0)
+	{
+		RemoveItemFromGrid(RightClickedItem, Index);
+	}
 }
 
 void UInv_InventoryGrid::DropItem()
