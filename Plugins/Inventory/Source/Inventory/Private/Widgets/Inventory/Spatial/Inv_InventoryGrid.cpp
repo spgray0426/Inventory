@@ -560,6 +560,11 @@ void UInv_InventoryGrid::DropItem()
 	ShowCursor();
 }
 
+bool UInv_InventoryGrid::HasHoverItem() const
+{
+	return IsValid(HoverItem);
+}
+
 bool UInv_InventoryGrid::IsRightClick(const FPointerEvent& MouseEvent) const
 {
 	// 마우스 이벤트가 오른쪽 클릭인지 확인

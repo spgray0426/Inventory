@@ -34,7 +34,8 @@ public:
 	 * @return 이벤트 처리 결과
 	 */
 	virtual FReply NativeOnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
-
+	virtual void NativeOnMouseEnter(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
+	virtual void NativeOnMouseLeave(const FPointerEvent& MouseEvent) override;
 	/** 아이템이 스택 가능한지 확인합니다 */
 	bool IsStackable() const { return bIsStackable; }
 
