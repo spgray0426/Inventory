@@ -16,4 +16,7 @@ namespace FragmentTags
 
 	/** 스택 가능 프래그먼트 태그 (FragmentTags.StackableFragment) - 아이템 스택 기능 활성화 */
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(StackableFragment)
+
+	/** 소비 가능 프래그먼트 태그 (FragmentTags.ConsumableFragment) - 아이템 소비 기능 활성화 */
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(ConsumableFragment)
 }
