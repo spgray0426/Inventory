@@ -49,6 +49,24 @@ FInv_SlotAvailabilityResult UInv_SpatialInventory::HasRoomForItem(UInv_ItemCompo
 
 }
 
+void UInv_SpatialInventory::OnItemHovered(UInv_InventoryItem* Item)
+{
+	Super::OnItemHovered(Item);
+}
+
+void UInv_SpatialInventory::OnItemUnHovered()
+{
+	Super::OnItemUnHovered();
+}
+
+bool UInv_SpatialInventory::HasHoverItem() const
+{
+	if (Grid_Equippables->HasHoverItem()) return true;
+	if (Grid_Consumables->HasHoverItem()) return true;
+	if (Grid_Craftables->HasHoverItem()) return true;
+	return false;
+}
+
 void UInv_SpatialInventory::ShowEquippables()
 {
 	// 장비 그리드를 활성화합니다

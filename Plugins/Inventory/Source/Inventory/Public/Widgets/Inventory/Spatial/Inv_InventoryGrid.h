@@ -91,6 +91,8 @@ public:
 	 * 서버에 드롭 요청을 보내고 호버 아이템을 제거합니다
 	 */
 	void DropItem();
+
+	bool HasHoverItem() const;
 private:
 
 	/**

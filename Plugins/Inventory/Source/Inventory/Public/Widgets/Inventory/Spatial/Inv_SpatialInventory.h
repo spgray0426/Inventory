@@ -29,6 +29,7 @@ public:
 	virtual void NativeOnInitialized() override;
 	virtual FReply NativeOnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
 	
+	
 	/**
 	 * 아이템을 배치할 공간이 있는지 확인합니다
 	 * 현재 활성화된 그리드에서 공간을 확인합니다
@@ -36,6 +37,10 @@ public:
 	 * @return 슬롯 사용 가능 여부 결과
 	 */
 	virtual FInv_SlotAvailabilityResult HasRoomForItem(UInv_ItemComponent* ItemComponent) const override;
+
+	virtual void OnItemHovered(UInv_InventoryItem* Item) override;
+	virtual void OnItemUnHovered() override;
+	virtual bool HasHoverItem() const override;
 private:
 
 	/**

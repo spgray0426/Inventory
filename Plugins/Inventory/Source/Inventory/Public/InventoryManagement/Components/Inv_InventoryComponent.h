@@ -101,6 +101,8 @@ public:
 	 * @param StackCount 드롭할 스택 수량
 	 */
 	void SpawnDroppedItem(UInv_InventoryItem* Item, int32 StackCount);
+
+	UInv_InventoryBase* GetInventoryMenu() const { return InventoryMenu; }
 	
 	/** 아이템이 추가될 때 호출되는 델리게이트 */
 	FInventoryItemChange OnItemAdded;
