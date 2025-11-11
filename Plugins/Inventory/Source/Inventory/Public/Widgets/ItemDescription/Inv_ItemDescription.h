@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Widgets/Composite/Inv_Composite.h"
 #include "Inv_ItemDescription.generated.h"
 
 class USizeBox;
@@ -13,7 +14,7 @@ class USizeBox;
  * SizeBox를 사용하여 동적으로 크기가 조정됩니다
  */
 UCLASS()
-class INVENTORY_API UInv_ItemDescription : public UUserWidget
+class INVENTORY_API UInv_ItemDescription : public UInv_Composite
 {
     GENERATED_BODY()
 
