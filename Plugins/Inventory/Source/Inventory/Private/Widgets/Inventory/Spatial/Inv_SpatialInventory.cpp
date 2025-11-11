@@ -11,6 +11,18 @@
 #include "InventoryManagement/Utils/Inv_InventoryStatics.h"
 #include "Widgets/Inventory/Spatial/Inv_InventoryGrid.h"
 
+/**
+ * 위젯 초기화 함수
+ *
+ * 실행 순서:
+ * 1. 부모 클래스의 초기화 로직 실행
+ * 2. 각 카테고리 버튼에 클릭 이벤트 핸들러 바인딩
+ *    - 장비 버튼 -> ShowEquippables()
+ *    - 소비품 버튼 -> ShowConsumables()
+ *    - 제작 재료 버튼 -> ShowCraftables()
+ * 3. 각 그리드에 캔버스 패널 설정 (호버 아이템 표시용)
+ * 4. 기본 그리드로 장비 그리드를 표시
+ */
 void UInv_SpatialInventory::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
@@ -20,20 +32,38 @@ void UInv_SpatialInventory::NativeOnInitialized()
 	Button_Consumables->OnClicked.AddDynamic(this, &ThisClass::ShowConsumables);
 	Button_Craftables->OnClicked.AddDynamic(this, &ThisClass::ShowCraftables);
 
+	// 각 그리드에 소유 캔버스를 설정합니다 (호버 아이템을 표시하기 위함)
 	Grid_Equippables->SetOwningCanvas(CanvasPanel);
 	Grid_Consumables->SetOwningCanvas(CanvasPanel);
 	Grid_Craftables->SetOwningCanvas(CanvasPanel);
-	
+
 	// 기본적으로 장비 그리드를 표시합니다
 	ShowEquippables();
 }
 
+/**
+ * 마우스 버튼 다운 이벤트 처리
+ *
+ * 그리드 외부 영역을 클릭했을 때 드래그 중인 아이템을 드롭합니다
+ * 이를 통해 사용자가 인벤토리 외부를 클릭하여 아이템을 버릴 수 있습니다
+ *
+ * @return FReply::Handled()를 반환하여 이벤트가 처리되었음을 알립니다
+ */
 FReply UInv_SpatialInventory::NativeOnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
 {
+	// 현재 활성화된 그리드에서 호버 아이템을 드롭합니다
 	ActiveGrid->DropItem();
 	return FReply::Handled();
 }
 
+/**
+ * 매 프레임마다 호출되는 틱 함수
+ *
+ * 아이템 설명 위젯이 표시 중일 때 마우스 커서를 따라다니도록
+ * 위치를 지속적으로 업데이트합니다
+ *
+ * 이를 통해 마우스를 움직여도 설명 위젯이 항상 커서 근처에 표시됩니다
+ */
 void UInv_SpatialInventory::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
@@ -44,6 +74,19 @@ void UInv_SpatialInventory::NativeTick(const FGeometry& MyGeometry, float InDelt
 	SetItemDescriptionSizeAndPosition(ItemDescription, CanvasPanel);
 }
 
+/**
+ * 아이템을 배치할 공간이 있는지 확인합니다
+ *
+ * 아이템의 카테고리에 따라 해당하는 그리드에서 공간을 체크합니다:
+ * - Equippable: 장비 그리드
+ * - Consumable: 소비품 그리드
+ * - Craftable: 제작 재료 그리드
+ *
+ * 카테고리가 유효하지 않으면 에러를 로그에 출력하고 빈 결과를 반환합니다
+ *
+ * @param ItemComponent 공간을 확인할 아이템 컴포넌트
+ * @return 슬롯 사용 가능 여부와 상세 정보를 담은 결과 구조체
+ */
 FInv_SlotAvailabilityResult UInv_SpatialInventory::HasRoomForItem(UInv_ItemComponent* ItemComponent) const
 {
 	// 아이템 카테고리에 따라 해당 그리드에서 공간을 확인합니다
@@ -61,8 +104,25 @@ FInv_SlotAvailabilityResult UInv_SpatialInventory::HasRoomForItem(UInv_ItemCompo
 
 }
 
+/**
+ * 아이템에 마우스를 올렸을 때 호출되는 함수
+ *
+ * 동작 순서:
+ * 1. 아이템의 매니페스트를 가져옵니다
+ * 2. 아이템 설명 위젯을 가져오거나 생성합니다 (지연 초기화)
+ * 3. 위젯을 일단 숨김 상태로 설정합니다
+ * 4. 이전에 설정된 타이머가 있으면 취소합니다
+ * 5. 지연 타이머를 설정하여 일정 시간 후에 설명을 표시합니다
+ *
+ * 지연 타이머를 사용하는 이유:
+ * - 마우스를 빠르게 움직일 때는 설명이 표시되지 않도록 함
+ * - UX 개선: 사용자가 특정 아이템에 잠시 머물렀을 때만 표시
+ *
+ * @param Item 마우스를 올린 아이템
+ */
 void UInv_SpatialInventory::OnItemHovered(UInv_InventoryItem* Item)
 {
+	const auto& Manifest = Item->GetItemManifest();
 	// 아이템 설명 위젯을 가져옵니다 (없으면 생성)
 	UInv_ItemDescription* DescriptionWidget = GetItemDescription();
 	// 일단 숨김 상태로 설정합니다
@@ -74,8 +134,10 @@ void UInv_SpatialInventory::OnItemHovered(UInv_InventoryItem* Item)
 	// 지연 후에 설명을 표시하는 람다를 타이머 델리게이트에 바인딩합니다
 	// 이를 통해 마우스를 빠르게 움직일 때는 설명이 표시되지 않습니다
 	FTimerDelegate DescriptionTimerDelegate;
-	DescriptionTimerDelegate.BindLambda([this]()
+	DescriptionTimerDelegate.BindLambda([this, &Manifest, DescriptionWidget]()
 	{
+		// 매니페스트의 모든 인벤토리 프래그먼트를 위젯에 동화시킵니다
+		Manifest.AssimilateInventoryFragments(DescriptionWidget);
 		// HitTestInvisible로 설정하여 마우스 이벤트를 방해하지 않으면서 보이도록 합니다
 		GetItemDescription()->SetVisibility(ESlateVisibility::HitTestInvisible);
 	});
@@ -84,6 +146,16 @@ void UInv_SpatialInventory::OnItemHovered(UInv_InventoryItem* Item)
 	GetOwningPlayer()->GetWorldTimerManager().SetTimer(DescriptionTimer, DescriptionTimerDelegate, DescriptionTimerDelay, false);
 }
 
+/**
+ * 아이템에서 마우스를 뗐을 때 호출되는 함수
+ *
+ * 동작:
+ * 1. 아이템 설명 위젯을 즉시 숨깁니다
+ * 2. 대기 중인 타이머를 취소합니다 (아직 표시되지 않았을 경우)
+ *
+ * 이를 통해 아이템 설명이 더 이상 필요 없을 때 즉시 사라지고,
+ * 표시 예정이었던 타이머도 정리됩니다
+ */
 void UInv_SpatialInventory::OnItemUnHovered()
 {
 	// 아이템 설명을 즉시 숨깁니다
@@ -92,6 +164,17 @@ void UInv_SpatialInventory::OnItemUnHovered()
 	GetOwningPlayer()->GetWorldTimerManager().ClearTimer(DescriptionTimer);
 }
 
+/**
+ * 현재 드래그 중인 호버 아이템이 있는지 확인합니다
+ *
+ * 세 개의 그리드(장비, 소비품, 제작 재료)를 모두 검사하여
+ * 하나라도 호버 아이템이 있으면 true를 반환합니다
+ *
+ * 호버 아이템은 사용자가 드래그 중인 아이템을 의미하며,
+ * 이 정보는 인벤토리 닫기 방지 등에 사용됩니다
+ *
+ * @return 호버 아이템이 있으면 true, 없으면 false
+ */
 bool UInv_SpatialInventory::HasHoverItem() const
 {
 	// 세 개의 그리드 중 하나라도 호버 아이템(드래그 중인 아이템)이 있으면 true를 반환합니다
@@ -101,24 +184,52 @@ bool UInv_SpatialInventory::HasHoverItem() const
 	return false;
 }
 
+/**
+ * 장비 그리드를 표시합니다
+ *
+ * 버튼 클릭 이벤트에 바인딩되어 있으며,
+ * SetActiveGrid를 호출하여 장비 그리드로 전환합니다
+ */
 void UInv_SpatialInventory::ShowEquippables()
 {
 	// 장비 그리드를 활성화합니다
 	SetActiveGrid(Grid_Equippables, Button_Equippables);
 }
 
+/**
+ * 소비품 그리드를 표시합니다
+ *
+ * 버튼 클릭 이벤트에 바인딩되어 있으며,
+ * SetActiveGrid를 호출하여 소비품 그리드로 전환합니다
+ */
 void UInv_SpatialInventory::ShowConsumables()
 {
 	// 소비품 그리드를 활성화합니다
 	SetActiveGrid(Grid_Consumables, Button_Consumables);
 }
 
+/**
+ * 제작 재료 그리드를 표시합니다
+ *
+ * 버튼 클릭 이벤트에 바인딩되어 있으며,
+ * SetActiveGrid를 호출하여 제작 재료 그리드로 전환합니다
+ */
 void UInv_SpatialInventory::ShowCraftables()
 {
 	// 제작 재료 그리드를 활성화합니다
 	SetActiveGrid(Grid_Craftables, Button_Craftables);
 }
 
+/**
+ * 버튼 상태를 업데이트합니다
+ *
+ * 모든 카테고리 버튼을 활성화한 후,
+ * 현재 선택된 버튼만 비활성화합니다
+ *
+ * 이를 통해 사용자가 현재 어떤 탭이 선택되었는지 시각적으로 확인할 수 있습니다
+ *
+ * @param Button 비활성화할 버튼 (현재 선택된 탭의 버튼)
+ */
 void UInv_SpatialInventory::DisableButtons(UButton* Button)
 {
 	// 모든 버튼을 활성화합니다
@@ -129,6 +240,19 @@ void UInv_SpatialInventory::DisableButtons(UButton* Button)
 	Button->SetIsEnabled(false);
 }
 
+/**
+ * 활성 그리드를 설정하고 UI를 전환합니다
+ *
+ * 실행 순서:
+ * 1. 이전 활성 그리드의 커서를 숨깁니다
+ * 2. 새 그리드를 활성 그리드로 설정합니다
+ * 3. 새 그리드의 커서를 표시합니다
+ * 4. 버튼 상태를 업데이트합니다 (선택된 버튼 비활성화)
+ * 5. 위젯 스위처를 통해 새 그리드를 표시합니다
+ *
+ * @param Grid 활성화할 인벤토리 그리드
+ * @param Button 관련된 탭 버튼
+ */
 void UInv_SpatialInventory::SetActiveGrid(UInv_InventoryGrid* Grid, UButton* Button)
 {
 	// 이전 그리드의 커서를 숨깁니다
@@ -143,6 +267,22 @@ void UInv_SpatialInventory::SetActiveGrid(UInv_InventoryGrid* Grid, UButton* But
 	WidgetSwitcher->SetActiveWidget(Grid);
 }
 
+/**
+ * 아이템 설명 위젯의 크기와 위치를 설정합니다
+ *
+ * 동작 순서:
+ * 1. 캔버스 패널 슬롯을 가져옵니다
+ * 2. 위젯의 동적 크기를 계산하여 설정합니다
+ * 3. 마우스 커서 위치를 가져옵니다
+ * 4. 화면 경계 내에서 위치를 보정합니다 (화면 밖으로 나가지 않도록)
+ * 5. 계산된 위치를 캔버스 슬롯에 적용합니다
+ *
+ * 이 함수는 NativeTick에서 매 프레임 호출되어
+ * 마우스 커서를 따라다니는 툴팁 효과를 구현합니다
+ *
+ * @param Description 위치를 설정할 아이템 설명 위젯
+ * @param Canvas 위젯을 포함하는 캔버스 패널
+ */
 void UInv_SpatialInventory::SetItemDescriptionSizeAndPosition(UInv_ItemDescription* Description, UCanvasPanel* Canvas) const
 {
 	// 캔버스 패널 슬롯을 가져옵니다

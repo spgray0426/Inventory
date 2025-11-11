@@ -6,6 +6,7 @@
 #include "StructUtils/InstancedStruct.h"
 #include "Inv_ItemManifest.generated.h"
 
+class UInv_CompositeBase;
 struct FInv_ItemFragment;
 class UInv_InventoryItem;
 
@@ -39,6 +40,15 @@ struct INVENTORY_API FInv_ItemManifest
 	FGameplayTag GetItemType() const { return ItemType; }
 
 	/**
+	 * 이 매니페스트의 모든 인벤토리 아이템 프래그먼트를 컴포지트 위젯에 동화시킵니다
+	 * FInv_InventoryItemFragment 타입의 모든 프래그먼트를 찾아서 각각을 위젯에 적용합니다
+	 * 컴포지트 패턴을 사용하여 위젯 계층 구조를 순회하며 각 프래그먼트를 해당 위젯에 적용합니다
+	 *
+	 * @param Composite 프래그먼트 데이터를 동화시킬 대상 컴포지트 위젯
+	 */
+	void AssimilateInventoryFragments(UInv_CompositeBase* Composite) const;
+	
+	/**
 	 * 특정 GameplayTag를 가진 프래그먼트를 타입별로 검색합니다
 	 * @tparam T 검색할 프래그먼트 타입 (FInv_ItemFragment 파생 타입)
 	 * @param FragmentTag 검색할 프래그먼트의 GameplayTag
@@ -62,6 +72,17 @@ struct INVENTORY_API FInv_ItemManifest
 	 */
 	template<typename T> requires std::derived_from<T, FInv_ItemFragment>
 	T* GetFragmentOfTypeMutable();
+
+	/**
+	 * 특정 타입의 모든 프래그먼트를 검색하여 배열로 반환합니다
+	 * 동일한 타입의 프래그먼트가 여러 개 존재할 수 있는 경우 사용합니다
+	 * 예: 여러 개의 FInv_InventoryItemFragment를 가진 아이템
+	 *
+	 * @tparam T 검색할 프래그먼트 타입 (FInv_ItemFragment 파생 타입)
+	 * @return 찾은 모든 프래그먼트의 const 포인터 배열
+	 */
+	template<typename T> requires std::derived_from<T, FInv_ItemFragment>
+	TArray<const T*> GetAllFragmentsOfType() const;
 
 	/**
 	 * 이 매니페스트를 사용하여 픽업 액터를 월드에 스폰합니다
@@ -147,4 +168,25 @@ T* FInv_ItemManifest::GetFragmentOfTypeMutable()
 		}
 	}
 	return nullptr;
+}
+
+/**
+ * 특정 타입의 모든 프래그먼트를 검색하는 템플릿 함수 구현
+ * Fragments 배열을 순회하며 타입이 일치하는 모든 프래그먼트를 수집하여 반환합니다
+ * 이 함수는 동일 타입의 프래그먼트가 여러 개 있을 때 유용합니다
+ */
+template <typename T> requires std::derived_from<T, FInv_ItemFragment>
+TArray<const T*> FInv_ItemManifest::GetAllFragmentsOfType() const
+{
+	TArray<const T*> Result;
+	// 모든 프래그먼트를 순회
+	for (const TInstancedStruct<FInv_ItemFragment>& Fragment : Fragments)
+	{
+		// 타입이 일치하는 프래그먼트를 찾으면 결과 배열에 추가
+		if (const T* FragmentPtr = Fragment.GetPtr<T>())
+		{
+			Result.Add(FragmentPtr);
+		}
+	}
+	return Result;
 }
