@@ -53,6 +53,40 @@ private:
 	FGameplayTag FrgmentTag = FGameplayTag::EmptyTag;
 };
 
+
+/**
+ * 인벤토리 아이템 프래그먼트
+ * 컴포지트 위젯 시스템과 상호작용하여 UI 요소를 확장(Expand)하는 프래그먼트입니다
+ * GameplayTag를 사용하여 특정 위젯 타입과 매칭되며, 일치하는 위젯에 데이터를 동화(Assimilate)시킵니다
+ *
+ * 이 프래그먼트는 아이템 매니페스트의 데이터를 UI 위젯에 반영하는 데 사용됩니다
+ * 예: 아이템 설명 위젯에 아이템 이름, 설명 등을 표시
+ */
+class UInv_CompositeBase;
+USTRUCT(BlueprintType)
+struct FInv_InventoryItemFragment : public FInv_ItemFragment
+{
+	GENERATED_BODY()
+
+	/**
+	 * 이 프래그먼트의 데이터를 컴포지트 위젯에 동화(Assimilate)시킵니다
+	 * GameplayTag가 일치하는 경우에만 위젯을 확장(Expand)합니다
+	 *
+	 * @param Composite 데이터를 동화시킬 대상 컴포지트 위젯
+	 */
+	virtual void Assimilate(UInv_CompositeBase* Composite) const;
+
+protected:
+	/**
+	 * 이 프래그먼트의 GameplayTag가 위젯의 Tag와 정확히 일치하는지 확인합니다
+	 *
+	 * @param Composite 태그를 비교할 대상 위젯
+	 * @return 태그가 정확히 일치하면 true, 아니면 false
+	 */
+	bool MatchesWidgetTag(const UInv_CompositeBase* Composite) const;
+};
+
+
 /**
  * 그리드 기반 인벤토리의 공간 차원을 정의하는 그리드 프래그먼트
  * 아이템이 차지하는 그리드 셀의 개수(너비 x 높이)와 패딩을 지정합니다

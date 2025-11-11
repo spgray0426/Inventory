@@ -5,6 +5,27 @@
 
 #include "Items/Fragments/Inv_ItemFragment.h"
 
+#include "Widgets/Composite/Inv_CompositeBase.h"
+
+/**
+ * 이 프래그먼트의 데이터를 컴포지트 위젯에 동화시킵니다
+ * 먼저 GameplayTag가 일치하는지 확인하고, 일치하면 위젯을 확장(Expand)합니다
+ * 이를 통해 위젯이 이 프래그먼트의 데이터를 표시할 준비를 합니다
+ */
+void FInv_InventoryItemFragment::Assimilate(UInv_CompositeBase* Composite) const
+{
+    if (!MatchesWidgetTag(Composite)) return;
+    Composite->Expand();
+}
+
+/**
+ * 이 프래그먼트의 GameplayTag와 위젯의 FragmentTag를 정확히 비교합니다
+ * 태그가 정확히 일치해야만 true를 반환하며, 부모 태그 매칭은 허용하지 않습니다
+ */
+bool FInv_InventoryItemFragment::MatchesWidgetTag(const UInv_CompositeBase* Composite) const
+{
+    return Composite->GetFragmentTag().MatchesTagExact(GetFragmentTag());
+}
 
 void FInv_HealthPotionFragment::OnConsume(APlayerController* PC)
 {
