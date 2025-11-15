@@ -6,6 +6,8 @@
 #include "Items/Fragments/Inv_ItemFragment.h"
 
 #include "Widgets/Composite/Inv_CompositeBase.h"
+#include "Widgets/Composite/Inv_Leaf_Image.h"
+#include "Widgets/Composite/Inv_Leaf_Text.h"
 
 /**
  * 이 프래그먼트의 데이터를 컴포지트 위젯에 동화시킵니다
@@ -25,6 +27,52 @@ void FInv_InventoryItemFragment::Assimilate(UInv_CompositeBase* Composite) const
 bool FInv_InventoryItemFragment::MatchesWidgetTag(const UInv_CompositeBase* Composite) const
 {
     return Composite->GetFragmentTag().MatchesTagExact(GetFragmentTag());
+}
+
+/**
+ * 이미지 프래그먼트 데이터를 컴포지트 위젯에 동화시킵니다
+ *
+ * 위젯 태그가 프래그먼트 태그와 일치하는지 확인한 후,
+ * UInv_Leaf_Image 위젯에 아이콘 텍스처와 크기 정보를 설정합니다.
+ */
+void FInv_ImageFragment::Assimilate(UInv_CompositeBase* Composite) const
+{
+	// 부모 클래스의 Assimilate를 먼저 호출합니다
+	FInv_InventoryItemFragment::Assimilate(Composite);
+
+	// 위젯 태그가 프래그먼트 태그와 일치하는지 확인합니다
+	if (!MatchesWidgetTag(Composite)) return;
+
+	// 컴포지트를 UInv_Leaf_Image로 캐스팅합니다
+	UInv_Leaf_Image* Image = Cast<UInv_Leaf_Image>(Composite);
+	if (!IsValid(Image)) return;
+
+	// 이미지 위젯에 아이콘과 크기를 설정합니다
+	Image->SetImage(Icon);
+	Image->SetBoxSize(IconDimensions);
+	Image->SetImageSize(IconDimensions);
+}
+
+/**
+ * 텍스트 프래그먼트 데이터를 컴포지트 위젯에 동화시킵니다
+ *
+ * 위젯 태그가 프래그먼트 태그와 일치하는지 확인한 후,
+ * UInv_Leaf_Text 위젯에 텍스트 정보를 설정합니다.
+ */
+void FInv_TextFragment::Assimilate(UInv_CompositeBase* Composite) const
+{
+	// 부모 클래스의 Assimilate를 먼저 호출합니다
+	FInv_InventoryItemFragment::Assimilate(Composite);
+
+	// 위젯 태그가 프래그먼트 태그와 일치하는지 확인합니다
+	if (!MatchesWidgetTag(Composite)) return;
+
+	// 컴포지트를 UInv_Leaf_Text로 캐스팅합니다
+	UInv_Leaf_Text* LeafText = Cast<UInv_Leaf_Text>(Composite);
+	if (!IsValid(LeafText)) return;
+
+	// 텍스트 위젯에 텍스트를 설정합니다
+	LeafText->SetText(FragmentText);
 }
 
 void FInv_HealthPotionFragment::OnConsume(APlayerController* PC)
