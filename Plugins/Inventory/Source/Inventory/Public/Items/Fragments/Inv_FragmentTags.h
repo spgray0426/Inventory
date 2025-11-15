@@ -22,4 +22,7 @@ namespace FragmentTags
 
 	/** 아이템 이름 프래그먼트 태그 (FragmentTags.ItemNameFragment) - 아이템 이름 및 텍스트 정보 정의 */
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(ItemNameFragment)
+
+	/** 주요 스탯 프래그먼트 태그 (FragmentTags.PrimaryStatFragment) - 아이템의 주요 스탯 정보 정의 (공격력, 방어력 등) */
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(PrimaryStatFragment)
 }

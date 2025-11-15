@@ -21,6 +21,13 @@ struct INVENTORY_API FInv_ItemManifest
 	GENERATED_BODY()
 
 	/**
+	 * 프래그먼트 배열에 대한 수정 가능한 참조를 반환합니다
+	 * 프래그먼트를 직접 수정하거나 Manifest()를 호출할 때 사용됩니다
+	 * @return 프래그먼트 배열의 mutable 참조
+	 */
+	TArray<TInstancedStruct<FInv_ItemFragment>>& GetFragmentsMutable() { return Fragments; }
+
+	/**
 	 * 이 매니페스트를 사용하여 새로운 인벤토리 아이템 객체를 생성합니다
 	 * @param NewOuter 생성될 아이템의 외부 객체 (Owner)
 	 * @return 생성된 인벤토리 아이템 객체 포인터
@@ -93,6 +100,12 @@ struct INVENTORY_API FInv_ItemManifest
 	 */
 	void SpawnPickupActor(const UObject* WorldContextObject, const FVector& SpawnLocation, const FRotator& SpawnRotation);
 private:
+
+	/**
+	 * 프래그먼트 배열을 비우고 메모리를 해제합니다
+	 * 아이템 생성 후 매니페스트 데이터를 정리할 때 사용됩니다
+	 */
+	void ClearFragments();
 
 	/** 이 아이템을 구성하는 프래그먼트들의 배열 (그리드, 이미지, 스택 등) */
 	UPROPERTY(EditAnywhere, Category = "Inventory", meta = (ExcludeBaseStruct))

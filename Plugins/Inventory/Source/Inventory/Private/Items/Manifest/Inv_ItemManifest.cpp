@@ -7,8 +7,22 @@
 
 UInv_InventoryItem* FInv_ItemManifest::Manifest(UObject* NewOuter)
 {
+	// 새로운 인벤토리 아이템 객체를 생성합니다
 	UInv_InventoryItem* Item = NewObject<UInv_InventoryItem>(NewOuter, UInv_InventoryItem::StaticClass());
+
+	// 아이템에 이 매니페스트를 설정합니다
 	Item->SetItemManifest(*this);
+
+	// 각 프래그먼트의 Manifest() 메서드를 호출하여 초기화합니다
+	// 예: FInv_LabeledNumberFragment의 경우 Min~Max 범위에서 랜덤 값 생성
+	for (auto& Fragment : Item->GetItemManifestMutable().GetFragmentsMutable())
+	{
+		Fragment.GetMutable().Manifest();
+	}
+
+	// 매니페스트의 프래그먼트 데이터를 정리합니다 (아이템에 복사되었으므로)
+	ClearFragments();
+
 	return Item;
 }
 
@@ -59,4 +73,22 @@ void FInv_ItemManifest::SpawnPickupActor(const UObject* WorldContextObject, cons
 	check(ItemComp);
 
 	ItemComp->InitItemManifest(*this);
+}
+
+/**
+ * 프래그먼트 배열을 비우고 메모리를 해제합니다
+ *
+ * 아이템이 생성된 후 매니페스트의 프래그먼트 데이터를 정리합니다.
+ * 아이템에 이미 프래그먼트가 복사되었으므로 매니페스트의 원본 데이터는 필요 없습니다.
+ */
+void FInv_ItemManifest::ClearFragments()
+{
+	// 각 프래그먼트의 데이터를 리셋합니다
+	for (auto& Fragment : Fragments)
+	{
+		Fragment.Reset();
+	}
+
+	// 프래그먼트 배열을 비우고 메모리를 해제합니다
+	Fragments.Empty();
 }
