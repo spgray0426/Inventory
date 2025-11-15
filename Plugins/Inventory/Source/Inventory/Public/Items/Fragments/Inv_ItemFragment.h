@@ -137,7 +137,7 @@ private:
  * 아이콘 텍스처와 표시 크기를 포함합니다
  */
 USTRUCT(BlueprintType)
-struct FInv_ImageFragment : public FInv_ItemFragment
+struct FInv_ImageFragment : public FInv_InventoryItemFragment
 {
 	GENERATED_BODY()
 
@@ -147,6 +147,14 @@ struct FInv_ImageFragment : public FInv_ItemFragment
 	 */
 	UTexture2D* GetIcon() const { return Icon; }
 
+	/**
+	 * 이미지 프래그먼트 데이터를 컴포지트 위젯에 동화시킵니다
+	 * UInv_Leaf_Image 위젯에 아이콘과 크기 정보를 설정합니다
+	 *
+	 * @param Composite 데이터를 동화시킬 컴포지트 위젯
+	 */
+	virtual void Assimilate(UInv_CompositeBase* Composite) const override;
+
 private:
 
 	/** 인벤토리 UI에서 아이템 아이콘으로 사용되는 2D 텍스처 */
@@ -155,7 +163,43 @@ private:
 
 	/** 픽셀 단위의 아이콘 표시 크기. 기본값은 44x44 */
 	UPROPERTY(EditAnywhere, Category = "Inventory")
-	FVector2D IconDimensions {44.f, 44.f};
+	FVector2D IconDimensions {88.f, 88.f};
+};
+
+
+/**
+ * 아이템의 텍스트 정보를 담는 텍스트 프래그먼트
+ * 아이템 이름, 설명 등의 텍스트 데이터를 저장 고 UI에 표시합니다
+ */
+USTRUCT(BlueprintType)
+struct FInv_TextFragment : public FInv_InventoryItemFragment
+{
+	GENERATED_BODY()
+
+	/**
+	 * 프래그먼트에 저장된 텍스트를 가져옵니다
+	 * @return 프래그먼트의 텍스트 데이터
+	 */
+	FText GetText() const { return FragmentText; }
+
+	/**
+	 * 프래그먼트의 텍스트를 설정합니다
+	 * @param Text 설정할 텍스트 데이터
+	 */
+	void SetText(const FText& Text) { FragmentText = Text; }
+
+	/**
+	 * 텍스트 프래그먼트 데이터를 컴포지트 위젯에 동화시킵니다
+	 * UInv_Leaf_Text 위젯에 텍스트 정보를 설정합니다
+	 *
+	 * @param Composite 데이터를 동화시킬 컴포지트 위젯
+	 */
+	virtual void Assimilate(UInv_CompositeBase* Composite) const override;
+
+private:
+	/** 프래그먼트가 저장하는 텍스트 데이터 */
+	UPROPERTY(EditAnywhere, Category = "Inventory")
+	FText FragmentText;
 };
 
 /**
