@@ -46,6 +46,13 @@ struct FInv_ItemFragment
 	 */
 	void SetFragmentTag(FGameplayTag Tag) { FrgmentTag = Tag; }
 
+	/**
+	 * 프래그먼트가 처음 생성될 때 호출되는 초기화 메서드입니다
+	 * 랜덤 값 생성, 초기 상태 설정 등의 용도로 사용됩니다
+	 * 파생 클래스에서 오버라이드하여 자체 초기화 로직을 구현할 수 있습니다
+	 */
+	virtual void Manifest() {}
+	
 private:
 
 	/** 이 프래그먼트 타입을 고유하게 식별하는 GameplayTag */
@@ -200,6 +207,79 @@ private:
 	/** 프래그먼트가 저장하는 텍스트 데이터 */
 	UPROPERTY(EditAnywhere, Category = "Inventory")
 	FText FragmentText;
+};
+
+/**
+ * 라벨과 숫자 값을 함께 표시하는 프래그먼트
+ * 아이템의 스탯 정보(공격력, 방어력 등)를 표시하는 데 사용됩니다
+ *
+ * 예시: "공격력: 25.5", "방어력: 10.0", "내구도: 75.3"
+ *
+ * 주요 기능:
+ * - Min~Max 범위 내에서 랜덤 값 생성
+ * - 한 번 생성된 값은 유지 (장착/해제 시에도 동일한 값 유지)
+ * - 소수점 자릿수 제어
+ * - 라벨/값 개별 표시 제어
+ */
+USTRUCT(BlueprintType)
+struct FInv_LabeledNumberFragment : public FInv_InventoryItemFragment
+{
+	GENERATED_BODY()
+
+	/**
+	 * 라벨과 숫자 데이터를 컴포지트 위젯에 동화시킵니다
+	 * UInv_Leaf_LabeledValue 위젯에 라벨과 포맷팅된 숫자 값을 설정합니다
+	 *
+	 * @param Composite 데이터를 동화시킬 컴포지트 위젯
+	 */
+	virtual void Assimilate(UInv_CompositeBase* Composite) const override;
+
+	/**
+	 * 프래그먼트 초기화 시 랜덤 값을 생성합니다
+	 * bRandomizeOnManifest가 true일 때 Min~Max 범위에서 Value를 랜덤 설정합니다
+	 * 한 번 실행 후 bRandomizeOnManifest를 false로 설정하여 값을 고정합니다
+	 */
+	virtual void Manifest() override;
+
+	/**
+	 * 프래그먼트 초기화 시 랜덤화 여부
+	 * true: 처음 생성 시 랜덤 값 생성
+	 * false: 랜덤화하지 않고 기존 값 유지 (아이템 장착/해제 후에도 동일한 값 유지)
+	 */
+	bool bRandomizeOnManifest{true};
+
+private:
+	/** 표시할 라벨 텍스트 (예: "공격력:", "방어력:") */
+	UPROPERTY(EditAnywhere, Category = "Inventory")
+	FText Text_Label{};
+
+	/** 현재 값 (Manifest() 호출 시 Min~Max 범위에서 자동 설정됨) */
+	UPROPERTY(VisibleAnywhere, Category = "Inventory")
+	float Value{0.f};
+
+	/** 랜덤 값 생성 시 최소값 */
+	UPROPERTY(EditAnywhere, Category = "Inventory")
+	float Min{0};
+
+	/** 랜덤 값 생성 시 최대값 */
+	UPROPERTY(EditAnywhere, Category = "Inventory")
+	float Max{0};
+
+	/** true일 경우 라벨을 숨깁니다 */
+	UPROPERTY(EditAnywhere, Category = "Inventory")
+	bool bCollapseLabel{false};
+
+	/** true일 경우 값을 숨깁니다 */
+	UPROPERTY(EditAnywhere, Category = "Inventory")
+	bool bCollapseValue{false};
+
+	/** 표시할 최소 소수점 자릿수 (예: 1이면 25.0으로 표시) */
+	UPROPERTY(EditAnywhere, Category = "Inventory")
+	int32 MinFractionalDigits{1};
+
+	/** 표시할 최대 소수점 자릿수 (예: 1이면 25.5까지 표시) */
+	UPROPERTY(EditAnywhere, Category = "Inventory")
+	int32 MaxFractionalDigits{1};
 };
 
 /**

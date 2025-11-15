@@ -21,4 +21,7 @@ namespace FragmentTags
 
 	/** 아이템 이름 및 텍스트 정보를 식별하기 위한 아이템 이름 프래그먼트 태그 정의 */
 	UE_DEFINE_GAMEPLAY_TAG(ItemNameFragment, "FragmentTags.ItemNameFragment")
+
+	/** 주요 스탯 정보를 식별하기 위한 주요 스탯 프래그먼트 태그 정의 */
+	UE_DEFINE_GAMEPLAY_TAG(PrimaryStatFragment, "FragmentTags.PrimaryStatFragment")
 }

@@ -7,6 +7,7 @@
 
 #include "Widgets/Composite/Inv_CompositeBase.h"
 #include "Widgets/Composite/Inv_Leaf_Image.h"
+#include "Widgets/Composite/Inv_Leaf_LabeledValue.h"
 #include "Widgets/Composite/Inv_Leaf_Text.h"
 
 /**
@@ -73,6 +74,59 @@ void FInv_TextFragment::Assimilate(UInv_CompositeBase* Composite) const
 
 	// 텍스트 위젯에 텍스트를 설정합니다
 	LeafText->SetText(FragmentText);
+}
+
+/**
+ * 라벨과 숫자 데이터를 컴포지트 위젯에 동화시킵니다
+ *
+ * 위젯 태그가 프래그먼트 태그와 일치하는지 확인한 후,
+ * UInv_Leaf_LabeledValue 위젯에 라벨과 포맷팅된 숫자 값을 설정합니다.
+ */
+void FInv_LabeledNumberFragment::Assimilate(UInv_CompositeBase* Composite) const
+{
+	// 부모 클래스의 Assimilate를 먼저 호출합니다
+	FInv_InventoryItemFragment::Assimilate(Composite);
+
+	// 위젯 태그가 프래그먼트 태그와 일치하는지 확인합니다
+	if (!MatchesWidgetTag(Composite)) return;
+
+	// 컴포지트를 UInv_Leaf_LabeledValue로 캐스팅합니다
+	UInv_Leaf_LabeledValue* LabeledValue = Cast<UInv_Leaf_LabeledValue>(Composite);
+	if (!IsValid(LabeledValue)) return;
+
+	// 라벨 텍스트를 설정합니다 (예: "공격력:")
+	LabeledValue->SetText_Label(Text_Label, bCollapseLabel);
+
+	// 숫자 포맷 옵션을 설정합니다 (소수점 자릿수 제어)
+	FNumberFormattingOptions Options;
+	Options.MinimumFractionalDigits = MinFractionalDigits;  // 최소 소수점 자릿수
+	Options.MaximumFractionalDigits = MaxFractionalDigits;  // 최대 소수점 자릿수
+
+	// 값을 포맷팅하여 텍스트로 설정합니다 (예: "25.5")
+	LabeledValue->SetText_Value(FText::AsNumber(Value, &Options), bCollapseValue);
+}
+
+/**
+ * 프래그먼트 초기화 시 랜덤 값을 생성합니다
+ *
+ * 처음 아이템이 생성될 때만 Min~Max 범위에서 랜덤 값을 생성하고,
+ * 이후에는 동일한 값을 유지합니다 (장착/해제 시에도 값 유지).
+ */
+void FInv_LabeledNumberFragment::Manifest()
+{
+	// 부모 클래스의 Manifest를 먼저 호출합니다
+	FInv_InventoryItemFragment::Manifest();
+
+	// 처음 생성 시에만 랜덤 값을 생성합니다
+	if (bRandomizeOnManifest)
+	{
+		// Min과 Max 사이의 랜덤 float 값을 생성합니다
+		Value = FMath::FRandRange(Min, Max);
+	}
+
+	// 한 번 랜덤화한 후에는 더 이상 랜덤화하지 않도록 플래그를 false로 설정합니다
+	// 이를 통해 아이템을 장착했다가 떨어뜨려도 동일한 스탯 값을 유지합니다
+	bRandomizeOnManifest = false;
 }
 
 void FInv_HealthPotionFragment::OnConsume(APlayerController* PC)
