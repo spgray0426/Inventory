@@ -8,6 +8,7 @@
 #include "Widgets/Utils/Inv_WidgetUtils.h"
 #include "Inv_InventoryStatics.generated.h"
 
+class UInv_InventoryBase;
 class UInv_HoverItem;
 class UInv_ItemComponent;
 class UInv_InventoryComponent;
@@ -70,9 +71,23 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	static void ItemUnhovered(APlayerController* PC);
-	
+
+	/**
+	 * 플레이어 컨트롤러의 호버 아이템 위젯을 가져옵니다
+	 * 호버 아이템은 마우스 커서를 따라다니며 현재 들고 있는 아이템을 표시합니다
+	 * @param PC 플레이어 컨트롤러
+	 * @return 호버 아이템 위젯 (유효하지 않으면 nullptr)
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	static UInv_HoverItem* GetHoverItem(APlayerController* PC);
+
+	/**
+	 * 플레이어 컨트롤러의 인벤토리 위젯을 가져옵니다
+	 * 인벤토리 컴포넌트에서 메인 인벤토리 UI 위젯을 반환합니다
+	 * @param PC 플레이어 컨트롤러
+	 * @return 인벤토리 베이스 위젯 (유효하지 않으면 nullptr)
+	 */
+	static UInv_InventoryBase* GetInventoryWidget(APlayerController* PC);
 };
 
 /**

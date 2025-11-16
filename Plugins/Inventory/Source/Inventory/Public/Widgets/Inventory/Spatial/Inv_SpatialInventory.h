@@ -8,6 +8,7 @@
 #include "Widgets/ItemDescription/Inv_ItemDescription.h"
 #include "Inv_SpatialInventory.generated.h"
 
+class UInv_EquippedSlottedItem;
 class UInv_EquippedGridSlot;
 class UInv_ItemDescription;
 class UCanvasPanel;
@@ -76,8 +77,18 @@ public:
 	 * @return 호버 아이템이 있으면 true
 	 */
 	virtual bool HasHoverItem() const override;
-	
+
+	/**
+	 * 현재 활성화된 그리드의 호버 아이템 위젯을 가져옵니다
+	 * @return 호버 아이템 위젯
+	 */
 	virtual UInv_HoverItem* GetHoverItem() const override;
+
+	/**
+	 * 현재 활성화된 그리드의 타일 크기를 가져옵니다
+	 * @return 타일 크기 (픽셀 단위)
+	 */
+	virtual float GetTileSize() const override;
 private:
 
 	/**
@@ -100,9 +111,23 @@ private:
 	 */
 	UFUNCTION()
 	void ShowCraftables();
-	
+
+	/**
+	 * 장착 그리드 슬롯이 클릭되었을 때 호출됩니다
+	 * 호버 아이템을 해당 슬롯에 장착하는 로직을 처리합니다
+	 * @param EquippedGridSlot 클릭된 장착 슬롯
+	 * @param EquipmentTypeTag 장비 타입 태그 (예: Weapon, Armor 등)
+	 */
 	UFUNCTION()
 	void EquippedGridSlotClicked(UInv_EquippedGridSlot* EquippedGridSlot, const FGameplayTag& EquipmentTypeTag);
+
+	/**
+	 * 장착된 아이템이 클릭되었을 때 호출됩니다
+	 * 장착된 아이템을 해제하거나 다른 작업을 처리합니다
+	 * @param SlottedItem 클릭된 장착 아이템 위젯
+	 */
+	UFUNCTION()
+	void EquippedSlottedItemClicked(UInv_EquippedSlottedItem* SlottedItem);
 	
 	/**
 	 * 모든 버튼을 비활성화하고 선택된 버튼만 활성화합니다

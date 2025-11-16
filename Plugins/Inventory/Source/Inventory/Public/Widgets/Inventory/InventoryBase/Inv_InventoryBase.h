@@ -48,6 +48,19 @@ public:
 	 * @return 호버 아이템이 있으면 true
 	 */
 	virtual bool HasHoverItem() const { return false; }
-	
+
+	/**
+	 * 호버 아이템 위젯을 가져옵니다
+	 * 호버 아이템은 마우스 커서를 따라다니며 현재 들고 있는 아이템을 표시합니다
+	 * @return 호버 아이템 위젯 (기본 구현은 nullptr 반환)
+	 */
 	virtual UInv_HoverItem* GetHoverItem() const { return nullptr; }
+
+	/**
+	 * 그리드의 타일 크기를 가져옵니다
+	 * 타일 크기는 그리드의 각 셀이 차지하는 픽셀 단위 크기입니다
+	 * 장착 아이템의 크기를 계산하는 데 사용됩니다
+	 * @return 타일 크기 (픽셀 단위, 기본 구현은 0 반환)
+	 */
+	virtual float GetTileSize() const { return 0.f; }
 };

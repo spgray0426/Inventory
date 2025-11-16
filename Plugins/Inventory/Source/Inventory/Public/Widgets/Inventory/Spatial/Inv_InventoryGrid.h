@@ -98,8 +98,26 @@ public:
 	 * @return 호버 아이템이 있으면 true
 	 */
 	bool HasHoverItem() const;
-	
+
+	/**
+	 * 이 그리드의 호버 아이템 위젯을 가져옵니다
+	 * @return 호버 아이템 위젯
+	 */
 	UInv_HoverItem* GetHoverItem() const;
+
+	/**
+	 * 그리드의 타일 크기를 가져옵니다
+	 * @return 타일 크기 (픽셀 단위)
+	 */
+	float GetTileSize() const { return TileSize; }
+
+	/**
+	 * 호버 아이템을 제거합니다
+	 * 아이템이 장착되거나 다른 위치로 이동된 후 호버 아이템을 비웁니다
+	 * 호버 아이템 위젯은 제거되지 않고, 내부 아이템 데이터만 초기화됩니다
+	 */
+	void ClearHoverItem();
+	
 private:
 
 	/**
@@ -415,11 +433,7 @@ private:
 	 * @param Index 그리드 인덱스
 	 */
 	void PutDownOnIndex(const int32 Index);
-
-	/**
-	 * 호버 아이템을 제거합니다
-	 */
-	void ClearHoverItem();
+	
 
 	/**
 	 * 표시 가능한 커서 위젯을 가져옵니다

@@ -123,6 +123,18 @@ void UInv_InventoryComponent::Server_ConsumeItem_Implementation(UInv_InventoryIt
 	}
 }
 
+void UInv_InventoryComponent::Server_EquipSlotClicked_Implementation(UInv_InventoryItem* ItemToEquip, UInv_InventoryItem* ItemToUnequip)
+{
+	Multicast_EquipSlotClicked(ItemToEquip, ItemToUnequip);
+}
+
+void UInv_InventoryComponent::Multicast_EquipSlotClicked_Implementation(UInv_InventoryItem* ItemToEquip, UInv_InventoryItem* ItemToUnequip)
+{
+	// 장비 구성 요소는 이러한 대리인의 의견을 듣습니다
+	OnItemEquipped.Broadcast(ItemToEquip);
+	OnItemUnequipped.Broadcast(ItemToUnequip);
+}
+
 void UInv_InventoryComponent::ToggleInventoryMenu()
 {
 	if (bInventoryMenuOpen)

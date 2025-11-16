@@ -53,14 +53,45 @@ void UInv_InventoryStatics::ItemUnhovered(APlayerController* PC)
 	InventoryBase->OnItemUnHovered();
 }
 
+/**
+ * 플레이어 컨트롤러의 호버 아이템 위젯을 가져옵니다
+ *
+ * 인벤토리 컴포넌트 → 인벤토리 메뉴 → 호버 아이템 순서로 접근하여
+ * 현재 마우스 커서를 따라다니는 호버 아이템 위젯을 반환합니다.
+ *
+ * @param PC 플레이어 컨트롤러
+ * @return 호버 아이템 위젯 (유효하지 않으면 nullptr)
+ */
 UInv_HoverItem* UInv_InventoryStatics::GetHoverItem(APlayerController* PC)
 {
+	// 인벤토리 컴포넌트를 가져옵니다
 	UInv_InventoryComponent* IC = GetInventoryComponent(PC);
 	if (!IsValid(IC)) return nullptr;
 
+	// 인벤토리 메뉴 위젯을 가져옵니다
 	UInv_InventoryBase* InventoryBase = IC->GetInventoryMenu();
 	if (!IsValid(InventoryBase)) return nullptr;
 
+	// 호버 아이템 위젯을 반환합니다
 	return InventoryBase->GetHoverItem();
-	
+
+}
+
+/**
+ * 플레이어 컨트롤러의 인벤토리 위젯을 가져옵니다
+ *
+ * 인벤토리 컴포넌트에서 메인 인벤토리 UI 위젯을 반환합니다.
+ * 이 위젯은 그리드, 호버 아이템, 장착 슬롯 등을 포함하는 최상위 인벤토리 UI입니다.
+ *
+ * @param PC 플레이어 컨트롤러
+ * @return 인벤토리 베이스 위젯 (유효하지 않으면 nullptr)
+ */
+UInv_InventoryBase* UInv_InventoryStatics::GetInventoryWidget(APlayerController* PC)
+{
+	// 인벤토리 컴포넌트를 가져옵니다
+	UInv_InventoryComponent* IC = GetInventoryComponent(PC);
+	if (!IsValid(IC)) return nullptr;
+
+	// 인벤토리 메뉴 위젯을 반환합니다
+	return IC->GetInventoryMenu();
 }
