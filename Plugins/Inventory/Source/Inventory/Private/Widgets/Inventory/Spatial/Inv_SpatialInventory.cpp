@@ -11,6 +11,7 @@
 #include "Components/WidgetSwitcher.h"
 #include "InventoryManagement/Utils/Inv_InventoryStatics.h"
 #include "Widgets/Inventory/GridSlots/Inv_EquippedGridSlot.h"
+#include "Widgets/Inventory/HoverItem/Inv_HoverItem.h"
 #include "Widgets/Inventory/Spatial/Inv_InventoryGrid.h"
 
 /**
@@ -240,6 +241,14 @@ void UInv_SpatialInventory::ShowCraftables()
 
 void UInv_SpatialInventory::EquippedGridSlotClicked(UInv_EquippedGridSlot* EquippedGridSlot, const FGameplayTag& EquipmentTypeTag)
 {
+	// 호버 아이템을 장착할 수 있는지 확인하세요.
+	if (!CanEquipHoverItem(EquippedGridSlot, EquipmentTypeTag)) return;
+
+	// 장착된 슬롯 아이템을 생성하고 장착 그리드 슬롯에 추가하세요.
+	
+	
+	// 호버 아이템 지우기
+	// 서버에 아이템을 장착했음을 알립니다(아이템 장착 해제도 가능).
 }
 
 /**
@@ -324,6 +333,21 @@ void UInv_SpatialInventory::SetItemDescriptionSizeAndPosition(UInv_ItemDescripti
 
 	// 계산된 위치를 설정합니다
 	ItemDescriptionCPS->SetPosition(ClampedPosition);
+}
+
+bool UInv_SpatialInventory::CanEquipHoverItem(UInv_EquippedGridSlot* EquippedGridSlot, const FGameplayTag& EquipmentTypeTag) const
+{
+	if (!IsValid(EquippedGridSlot) || EquippedGridSlot->GetInventoryItem().IsValid()) return false;
+
+	UInv_HoverItem* HoverItem = GetHoverItem();
+	if (!IsValid(HoverItem)) return false;
+
+	UInv_InventoryItem* HeldItem = HoverItem->GetInventoryItem();
+
+	return HasHoverItem() && IsValid(HeldItem) &&
+		!HoverItem->IsStackable() &&
+			HeldItem->GetItemManifest().GetItemCategory() == EInv_ItemCategory::Equippable &&
+				HeldItem->GetItemManifest().GetItemType().MatchesTag(EquipmentTypeTag);
 }
 
 UInv_ItemDescription* UInv_SpatialInventory::GetItemDescription()
