@@ -25,6 +25,10 @@ public:
     FEquippedGridSlotClicked EquippedGridSlotClicked;
 
 private:
-    UPROPERTY(EditAnywhere, Category = "Inventory")
+    
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UImage> Image_GrayedOutIcon;
+    
+    UPROPERTY(EditAnywhere, Category = "Inventory", meta = (Categories = "GameItems.Equipment"))
     FGameplayTag EquipmentTypeTag;
 };
