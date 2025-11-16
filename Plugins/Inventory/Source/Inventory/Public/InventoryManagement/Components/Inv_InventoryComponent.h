@@ -21,6 +21,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FNoRoomInInventory);
 /** 스택 수량이 변경될 때 호출되는 델리게이트 */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FStackChange, const FInv_SlotAvailabilityResult&, Result);
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FItemEquipStatusChanged, UInv_InventoryItem*, Item);
+
 /**
  * 인벤토리 관리를 담당하는 액터 컴포넌트
  * 서버 권한 기반의 인벤토리 연산을 처리하며, Fast Array를 통해 인벤토리 상태를 복제합니다
@@ -83,6 +85,13 @@ public:
 	UFUNCTION(Server, Reliable)
 	void Server_ConsumeItem(UInv_InventoryItem* Item);
 	
+	
+	UFUNCTION(Server, Reliable)
+	void Server_EquipSlotClicked(UInv_InventoryItem* ItemToEquip, UInv_InventoryItem* ItemToUnequip);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_EquipSlotClicked(UInv_InventoryItem* ItemToEquip, UInv_InventoryItem* ItemToUnequip);
+	
 	/**
 	 * 인벤토리 메뉴를 열거나 닫습니다
 	 */
@@ -115,6 +124,9 @@ public:
 
 	/** 스택 수량이 변경될 때 호출되는 델리게이트 */
 	FStackChange OnStackChange;
+	
+	FItemEquipStatusChanged OnItemEquipped;
+	FItemEquipStatusChanged OnItemUnequipped;
 	
 protected:
 	/**

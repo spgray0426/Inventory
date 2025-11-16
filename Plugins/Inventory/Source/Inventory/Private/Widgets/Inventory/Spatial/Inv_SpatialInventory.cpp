@@ -9,9 +9,11 @@
 #include "Components/Button.h"
 #include "Components/CanvasPanelSlot.h"
 #include "Components/WidgetSwitcher.h"
+#include "InventoryManagement/Components/Inv_InventoryComponent.h"
 #include "InventoryManagement/Utils/Inv_InventoryStatics.h"
 #include "Widgets/Inventory/GridSlots/Inv_EquippedGridSlot.h"
 #include "Widgets/Inventory/HoverItem/Inv_HoverItem.h"
+#include "Widgets/Inventory/SlottedItems/Inv_EquippedSlottedItem.h"
 #include "Widgets/Inventory/Spatial/Inv_InventoryGrid.h"
 
 /**
@@ -197,10 +199,37 @@ bool UInv_SpatialInventory::HasHoverItem() const
 	return false;
 }
 
+/**
+ * 현재 활성화된 그리드의 호버 아이템 위젯을 가져옵니다
+ *
+ * 활성 그리드가 유효하지 않으면 nullptr을 반환합니다.
+ *
+ * @return 호버 아이템 위젯 (활성 그리드가 없으면 nullptr)
+ */
 UInv_HoverItem* UInv_SpatialInventory::GetHoverItem() const
 {
+	// 활성 그리드가 유효한지 확인합니다
 	if (!ActiveGrid.IsValid()) return nullptr;
+
+	// 활성 그리드의 호버 아이템을 반환합니다
 	return ActiveGrid->GetHoverItem();
+}
+
+/**
+ * 현재 활성화된 그리드의 타일 크기를 가져옵니다
+ *
+ * 타일 크기는 그리드의 각 셀이 차지하는 픽셀 단위 크기입니다.
+ * 장착 아이템의 크기를 계산하는 데 사용됩니다.
+ *
+ * @return 타일 크기 (픽셀 단위, 활성 그리드가 없으면 0)
+ */
+float UInv_SpatialInventory::GetTileSize() const
+{
+	// 활성 그리드가 유효한지 확인합니다
+	if (!ActiveGrid.IsValid()) return 0.f;
+
+	// 활성 그리드의 타일 크기를 반환합니다
+	return ActiveGrid->GetTileSize();
 }
 
 /**
@@ -239,16 +268,71 @@ void UInv_SpatialInventory::ShowCraftables()
 	SetActiveGrid(Grid_Craftables, Button_Craftables);
 }
 
+/**
+ * 장착 그리드 슬롯이 클릭되었을 때 호출됩니다
+ *
+ * 호버 아이템을 장착 슬롯에 장착하는 전체 프로세스를 처리합니다:
+ * 1. 호버 아이템이 해당 슬롯에 장착 가능한지 확인
+ * 2. 타일 크기를 가져와서 장착 아이템 위젯 생성
+ * 3. 장착 아이템 클릭 이벤트 바인딩
+ * 4. 그리드에서 호버 아이템 제거
+ * 5. 서버에 아이템 장착 RPC 요청 전송
+ * 6. 로컬 클라이언트에서 장착 이벤트 브로드캐스트 (UI 업데이트)
+ *
+ * @param EquippedGridSlot 클릭된 장착 슬롯
+ * @param EquipmentTypeTag 장비 타입 태그 (예: Weapon, Armor 등)
+ */
 void UInv_SpatialInventory::EquippedGridSlotClicked(UInv_EquippedGridSlot* EquippedGridSlot, const FGameplayTag& EquipmentTypeTag)
 {
-	// 호버 아이템을 장착할 수 있는지 확인하세요.
+	// 호버 아이템을 장착할 수 있는지 확인합니다
 	if (!CanEquipHoverItem(EquippedGridSlot, EquipmentTypeTag)) return;
 
-	// 장착된 슬롯 아이템을 생성하고 장착 그리드 슬롯에 추가하세요.
-	
-	
-	// 호버 아이템 지우기
-	// 서버에 아이템을 장착했음을 알립니다(아이템 장착 해제도 가능).
+	// 호버 아이템을 가져옵니다
+	UInv_HoverItem* HoverItem = GetHoverItem();
+
+	// 타일 크기를 가져옵니다 (장착 아이템 크기 계산에 사용)
+	const float TileSize = UInv_InventoryStatics::GetInventoryWidget(GetOwningPlayer())->GetTileSize();
+
+	// 장착 슬롯에 아이템을 장착하고 장착 아이템 위젯을 생성합니다
+	UInv_EquippedSlottedItem* EquippedSlottedItem = EquippedGridSlot->OnItemEquipped(
+		HoverItem->GetInventoryItem(),
+		EquipmentTypeTag,
+		TileSize
+	);
+
+	// 장착 아이템 클릭 이벤트를 바인딩합니다
+	EquippedSlottedItem->OnEquippedSlottedItemClicked.AddDynamic(this, &ThisClass::EquippedSlottedItemClicked);
+
+	// 호버 아이템을 그리드에서 제거합니다 (아이템이 장착되었으므로)
+	Grid_Equippables->ClearHoverItem();
+
+	// 인벤토리 컴포넌트를 가져옵니다
+	UInv_InventoryComponent* InventoryComponent = UInv_InventoryStatics::GetInventoryComponent(GetOwningPlayer());
+	check(IsValid(InventoryComponent));
+
+	// 서버에 아이템 장착 요청을 보냅니다
+	// nullptr은 이전 장착 아이템이 없음을 의미합니다 (교체가 아닌 신규 장착)
+	InventoryComponent->Server_EquipSlotClicked(HoverItem->GetInventoryItem(), nullptr);
+
+	// 데디케이티드 서버가 아닌 경우 (로컬 클라이언트 또는 리슨 서버)
+	// 아이템 장착 이벤트를 브로드캐스트하여 UI 업데이트를 트리거합니다
+	if (GetOwningPlayer()->GetNetMode() != NM_DedicatedServer)
+	{
+		InventoryComponent->OnItemEquipped.Broadcast(HoverItem->GetInventoryItem());
+	}
+}
+
+/**
+ * 장착된 아이템이 클릭되었을 때 호출됩니다
+ *
+ * 장착된 아이템을 해제하거나 다른 작업을 처리합니다.
+ * TODO: 장착 해제 로직 구현 필요
+ *
+ * @param SlottedItem 클릭된 장착 아이템 위젯
+ */
+void UInv_SpatialInventory::EquippedSlottedItemClicked(UInv_EquippedSlottedItem* SlottedItem)
+{
+	// TODO: 장착 아이템 해제 로직 구현
 }
 
 /**
