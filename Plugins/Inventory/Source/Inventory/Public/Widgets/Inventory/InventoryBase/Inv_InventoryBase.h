@@ -7,6 +7,7 @@
 #include "Types/Inv_GridTypes.h"
 #include "Inv_InventoryBase.generated.h"
 
+class UInv_HoverItem;
 class UInv_ItemComponent;
 class UInv_InventoryItem;
 /**
@@ -47,4 +48,6 @@ public:
 	 * @return 호버 아이템이 있으면 true
 	 */
 	virtual bool HasHoverItem() const { return false; }
+	
+	virtual UInv_HoverItem* GetHoverItem() const { return nullptr; }
 };

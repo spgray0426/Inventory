@@ -98,6 +98,8 @@ public:
 	 * @return 호버 아이템이 있으면 true
 	 */
 	bool HasHoverItem() const;
+	
+	UInv_HoverItem* GetHoverItem() const;
 private:
 
 	/**

@@ -52,3 +52,15 @@ void UInv_InventoryStatics::ItemUnhovered(APlayerController* PC)
 	// 인벤토리 UI에 마우스 떼기 이벤트를 전달하여 설명을 숨깁니다
 	InventoryBase->OnItemUnHovered();
 }
+
+UInv_HoverItem* UInv_InventoryStatics::GetHoverItem(APlayerController* PC)
+{
+	UInv_InventoryComponent* IC = GetInventoryComponent(PC);
+	if (!IsValid(IC)) return nullptr;
+
+	UInv_InventoryBase* InventoryBase = IC->GetInventoryMenu();
+	if (!IsValid(InventoryBase)) return nullptr;
+
+	return InventoryBase->GetHoverItem();
+	
+}

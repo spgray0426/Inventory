@@ -298,6 +298,9 @@ UInv_SlottedItem* UInv_InventoryGrid::CreateSlottedItem(UInv_InventoryItem* Item
 
 	// 클릭 이벤트를 바인딩합니다
 	SlottedItem->OnSlottedItemClicked.AddDynamic(this, &UInv_InventoryGrid::OnSlottedItemClicked);
+	/* 아래 함수들을 이용하면 마우스가 다운 및 업중일때 이벤트를 호출할 수 있음
+	 * SlottedItem->OnMouseButtonDown
+	 * SlottedItem->OnMouseButtonUp */
 	return SlottedItem;
 }
 
@@ -565,6 +568,11 @@ void UInv_InventoryGrid::DropItem()
 bool UInv_InventoryGrid::HasHoverItem() const
 {
 	return IsValid(HoverItem);
+}
+
+UInv_HoverItem* UInv_InventoryGrid::GetHoverItem() const
+{
+	return HoverItem;
 }
 
 bool UInv_InventoryGrid::IsRightClick(const FPointerEvent& MouseEvent) const
