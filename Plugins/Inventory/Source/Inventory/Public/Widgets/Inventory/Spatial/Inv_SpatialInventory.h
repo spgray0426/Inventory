@@ -8,6 +8,7 @@
 #include "Widgets/ItemDescription/Inv_ItemDescription.h"
 #include "Inv_SpatialInventory.generated.h"
 
+class UInv_EquippedGridSlot;
 class UInv_ItemDescription;
 class UCanvasPanel;
 class UButton;
@@ -75,6 +76,8 @@ public:
 	 * @return 호버 아이템이 있으면 true
 	 */
 	virtual bool HasHoverItem() const override;
+	
+	virtual UInv_HoverItem* GetHoverItem() const override;
 private:
 
 	/**
@@ -97,7 +100,10 @@ private:
 	 */
 	UFUNCTION()
 	void ShowCraftables();
-
+	
+	UFUNCTION()
+	void EquippedGridSlotClicked(UInv_EquippedGridSlot* EquippedGridSlot, const FGameplayTag& EquipmentTypeTag);
+	
 	/**
 	 * 모든 버튼을 비활성화하고 선택된 버튼만 활성화합니다
 	 * @param Button 활성화 상태로 유지할 버튼
@@ -125,6 +131,9 @@ private:
 	 * @param Canvas 위젯을 포함하는 캔버스 패널
 	 */
 	void SetItemDescriptionSizeAndPosition(UInv_ItemDescription* Description, UCanvasPanel* Canvas) const;
+	
+	UPROPERTY()
+	TArray<TObjectPtr<UInv_EquippedGridSlot>> EquippedGridSlots;
 	
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UCanvasPanel> CanvasPanel;
@@ -167,7 +176,7 @@ private:
 	/** 생성된 아이템 설명 위젯 인스턴스 */
 	UPROPERTY()
 	TObjectPtr<UInv_ItemDescription> ItemDescription;
-
+	
 	/** 아이템 설명 표시를 지연시키는 타이머 핸들 */
 	FTimerHandle DescriptionTimer;
 
@@ -178,13 +187,4 @@ private:
 	
 };
 
-inline UInv_ItemDescription* UInv_SpatialInventory::GetItemDescription()
-{
-	// 아직 생성되지 않은 경우에만 위젯을 생성합니다 (지연 초기화 패턴)
-	if (!IsValid(ItemDescription))
-	{
-		ItemDescription = CreateWidget<UInv_ItemDescription>(GetOwningPlayer(), ItemDescriptionClass);
-		CanvasPanel->AddChild(ItemDescription);
-	}
-	return ItemDescription;
-}
+

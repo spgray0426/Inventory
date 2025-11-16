@@ -5,10 +5,12 @@
 
 #include "Inventory.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
+#include "Blueprint/WidgetTree.h"
 #include "Components/Button.h"
 #include "Components/CanvasPanelSlot.h"
 #include "Components/WidgetSwitcher.h"
 #include "InventoryManagement/Utils/Inv_InventoryStatics.h"
+#include "Widgets/Inventory/GridSlots/Inv_EquippedGridSlot.h"
 #include "Widgets/Inventory/Spatial/Inv_InventoryGrid.h"
 
 /**
@@ -39,6 +41,16 @@ void UInv_SpatialInventory::NativeOnInitialized()
 
 	// 기본적으로 장비 그리드를 표시합니다
 	ShowEquippables();
+	
+	WidgetTree->ForEachWidget([this](UWidget* Widget)
+	{
+		UInv_EquippedGridSlot* EquippedGridSlot = Cast<UInv_EquippedGridSlot>(Widget);
+		if (IsValid(EquippedGridSlot))
+		{
+			EquippedGridSlots.Add(EquippedGridSlot);
+			EquippedGridSlot->EquippedGridSlotClicked.AddDynamic(this, &ThisClass::EquippedGridSlotClicked);
+		}
+	});
 }
 
 /**
@@ -184,6 +196,12 @@ bool UInv_SpatialInventory::HasHoverItem() const
 	return false;
 }
 
+UInv_HoverItem* UInv_SpatialInventory::GetHoverItem() const
+{
+	if (!ActiveGrid.IsValid()) return nullptr;
+	return ActiveGrid->GetHoverItem();
+}
+
 /**
  * 장비 그리드를 표시합니다
  *
@@ -218,6 +236,10 @@ void UInv_SpatialInventory::ShowCraftables()
 {
 	// 제작 재료 그리드를 활성화합니다
 	SetActiveGrid(Grid_Craftables, Button_Craftables);
+}
+
+void UInv_SpatialInventory::EquippedGridSlotClicked(UInv_EquippedGridSlot* EquippedGridSlot, const FGameplayTag& EquipmentTypeTag)
+{
 }
 
 /**
@@ -302,4 +324,15 @@ void UInv_SpatialInventory::SetItemDescriptionSizeAndPosition(UInv_ItemDescripti
 
 	// 계산된 위치를 설정합니다
 	ItemDescriptionCPS->SetPosition(ClampedPosition);
+}
+
+UInv_ItemDescription* UInv_SpatialInventory::GetItemDescription()
+{
+	// 아직 생성되지 않은 경우에만 위젯을 생성합니다 (지연 초기화 패턴)
+	if (!IsValid(ItemDescription))
+	{
+		ItemDescription = CreateWidget<UInv_ItemDescription>(GetOwningPlayer(), ItemDescriptionClass);
+		CanvasPanel->AddChild(ItemDescription);
+	}
+	return ItemDescription;
 }
