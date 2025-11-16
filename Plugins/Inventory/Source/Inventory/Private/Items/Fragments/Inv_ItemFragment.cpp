@@ -129,6 +129,70 @@ void FInv_LabeledNumberFragment::Manifest()
 	bRandomizeOnManifest = false;
 }
 
+/**
+ * 소비형 아이템을 사용하여 모든 수정자의 효과를 적용합니다
+ *
+ * 이 함수는 컴포지트 패턴을 활용하여 ConsumeModifiers 배열의 모든 수정자에 대해
+ * OnConsume()을 순차적으로 호출합니다. 이를 통해 하나의 아이템이 여러 효과를
+ * 동시에 제공할 수 있습니다 (예: 체력 +20, 마나 +10).
+ *
+ * @param PC 아이템을 소비하는 플레이어 컨트롤러
+ */
+void FInv_ConsumableFragment::OnConsume(APlayerController* PC)
+{
+	// 모든 소비 수정자를 순회하며 각각의 효과를 적용합니다
+	for (auto& Modifier : ConsumeModifiers)
+	{
+		// TInstancedStruct에서 가변 참조를 얻어 OnConsume을 호출합니다
+		auto& ModRef = Modifier.GetMutable();
+		ModRef.OnConsume(PC);
+	}
+}
+
+/**
+ * 소비형 프래그먼트 데이터를 컴포지트 위젯에 동화시킵니다
+ *
+ * 부모 클래스의 Assimilate를 호출한 후, 모든 ConsumeModifier의 데이터를
+ * 순회하며 각각 위젯에 동화시킵니다. 이를 통해 UI에 모든 소비 효과 정보가
+ * 표시됩니다 (예: "체력 +20", "마나 +10").
+ *
+ * @param Composite 데이터를 동화시킬 컴포지트 위젯
+ */
+void FInv_ConsumableFragment::Assimilate(UInv_CompositeBase* Composite) const
+{
+	// 부모 클래스의 Assimilate를 먼저 호출합니다
+	FInv_InventoryItemFragment::Assimilate(Composite);
+
+	// 모든 소비 수정자를 순회하며 각각을 위젯에 동화시킵니다
+	for (const auto& Modifier : ConsumeModifiers)
+	{
+		// TInstancedStruct에서 상수 참조를 얻어 Assimilate를 호출합니다
+		const auto& ModRef = Modifier.Get();
+		ModRef.Assimilate(Composite);
+	}
+}
+
+/**
+ * 프래그먼트 초기화 시 모든 수정자를 초기화합니다
+ *
+ * 부모 클래스의 Manifest를 호출한 후, 모든 ConsumeModifier에 대해
+ * Manifest()를 호출하여 랜덤 값 생성 등의 초기화 작업을 수행합니다.
+ * 이를 통해 각 소비 효과의 수치가 Min~Max 범위에서 자동 설정됩니다.
+ */
+void FInv_ConsumableFragment::Manifest()
+{
+	// 부모 클래스의 Manifest를 먼저 호출합니다
+	FInv_InventoryItemFragment::Manifest();
+
+	// 모든 소비 수정자를 순회하며 각각을 초기화합니다
+	for (auto& Modifier : ConsumeModifiers)
+	{
+		// TInstancedStruct에서 가변 참조를 얻어 Manifest를 호출합니다
+		auto& ModRef = Modifier.GetMutable();
+		ModRef.Manifest();
+	}
+}
+
 void FInv_HealthPotionFragment::OnConsume(APlayerController* PC)
 {
     // 실제 구현에서는 다음 중 하나를 사용하여 체력을 회복시킵니다:
@@ -137,7 +201,7 @@ void FInv_HealthPotionFragment::OnConsume(APlayerController* PC)
     // - Healing() 인터페이스 함수 호출
 
     // 현재는 디버그 메시지만 출력합니다 (테스트/프로토타입 용도)
-    GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Health Potion consumed! Healing by: %f"), HealAmount));
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Health Potion consumed! Healing by: %f"), GetValue()));
 }
 
 void FInv_ManaPotionFragment::OnConsume(APlayerController* PC)
@@ -146,5 +210,5 @@ void FInv_ManaPotionFragment::OnConsume(APlayerController* PC)
     // 예: Ability System Component를 통한 마나 회복 Gameplay Effect 적용
 
     // 현재는 디버그 메시지만 출력합니다 (테스트/프로토타입 용도)
-    GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, FString::Printf(TEXT("Mana Potion consumed! Mana replenished by: %f"), ManaAmount));
+    GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, FString::Printf(TEXT("Mana Potion consumed! Mana replenished by: %f"), GetValue()));
 }

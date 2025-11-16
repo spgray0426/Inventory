@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
+#include "StructUtils/InstancedStruct.h"
 
 #include "Inv_ItemFragment.generated.h"
 
@@ -242,6 +243,12 @@ struct FInv_LabeledNumberFragment : public FInv_InventoryItemFragment
 	virtual void Manifest() override;
 
 	/**
+	 * 프래그먼트가 저장하고 있는 현재 숫자 값을 가져옵니다
+	 * @return 프래그먼트의 현재 값 (Manifest() 호출 후 Min~Max 범위에서 설정된 값)
+	 */
+	float GetValue() const { return Value; }
+	
+	/**
 	 * 프래그먼트 초기화 시 랜덤화 여부
 	 * true: 처음 생성 시 랜덤 값 생성
 	 * false: 랜덤화하지 않고 기존 값 유지 (아이템 장착/해제 후에도 동일한 값 유지)
@@ -321,12 +328,14 @@ private:
 };
 
 /**
- * 소비 가능 아이템의 기본 프래그먼트
- * 아이템이 소비될 때의 동작을 정의합니다
- * 파생 구조체에서 OnConsume을 오버라이드하여 구체적인 소비 효과를 구현합니다
+ * 소비형 아이템의 개별 효과를 정의하는 수정자 프래그먼트
+ * FInv_LabeledNumberFragment를 상속받아 라벨과 수치값을 가진 효과를 표현합니다
+ *
+ * 이 구조체는 컴포지트 패턴의 일부로, 하나의 소비형 아이템이 여러 효과를
+ * 가질 수 있도록 합니다 (예: 체력 +20, 마나 +10을 동시에 제공하는 포션)
  */
 USTRUCT(BlueprintType)
-struct FInv_ConsumableFragment : public FInv_ItemFragment
+struct FInv_ConsumeModifier : public FInv_LabeledNumberFragment
 {
 	GENERATED_BODY()
 
@@ -339,17 +348,58 @@ struct FInv_ConsumableFragment : public FInv_ItemFragment
 };
 
 /**
+ * 소비 가능한 아이템을 정의하는 프래그먼트
+ * 여러 개의 FInv_ConsumeModifier를 포함할 수 있어 하나의 아이템이 복합적인 효과를
+ * 제공할 수 있습니다 (예: 체력과 마나를 동시에 회복하는 포션)
+ *
+ * 컴포지트 패턴을 사용하여 다양한 소비 효과를 조합할 수 있습니다:
+ * - 각 ConsumeModifier는 독립적인 효과를 정의
+ * - OnConsume() 호출 시 모든 수정자의 효과가 순차적으로 적용됨
+ * - UI 동화(Assimilate) 시 모든 수정자 정보가 위젯에 반영됨
+ */
+USTRUCT(BlueprintType)
+struct FInv_ConsumableFragment : public FInv_InventoryItemFragment
+{
+	GENERATED_BODY()
+
+	/**
+	 * 아이템을 소비하여 모든 수정자의 효과를 적용합니다
+	 * 배열의 각 ConsumeModifier에 대해 OnConsume()을 호출합니다
+	 * @param PC 아이템을 소비하는 플레이어 컨트롤러
+	 */
+	virtual void OnConsume(APlayerController* PC);
+
+	/**
+	 * 소비형 프래그먼트 데이터를 컴포지트 위젯에 동화시킵니다
+	 * 모든 ConsumeModifier의 데이터를 순회하며 각각 위젯에 동화시킵니다
+	 * @param Composite 데이터를 동화시킬 컴포지트 위젯
+	 */
+	virtual void Assimilate(UInv_CompositeBase* Composite) const override;
+
+	/**
+	 * 프래그먼트 초기화 시 모든 수정자를 초기화합니다
+	 * 각 ConsumeModifier의 Manifest()를 호출하여 랜덤 값 등을 생성합니다
+	 */
+	virtual void Manifest() override;
+
+private:
+	/**
+	 * 이 소비형 아이템이 제공하는 효과 수정자들의 배열
+	 * 각 수정자는 독립적인 효과를 정의합니다 (체력 회복, 마나 회복 등)
+	 * meta = (ExcludeBaseStruct): 에디터에서 기본 구조체를 제외하고 파생 타입만 선택 가능
+	 */
+	UPROPERTY(EditAnywhere, Category = "Inventory", meta = (ExcludeBaseStruct))
+	TArray<TInstancedStruct<FInv_ConsumeModifier>> ConsumeModifiers;
+};
+
+/**
  * 체력 회복 포션 프래그먼트
  * 소비 시 플레이어의 체력을 회복시키는 기능을 제공합니다
  */
 USTRUCT(BlueprintType)
-struct FInv_HealthPotionFragment : public FInv_ConsumableFragment
+struct FInv_HealthPotionFragment : public FInv_ConsumeModifier
 {
 	GENERATED_BODY()
-
-	/** 이 포션이 회복시키는 체력 수치. 기본값은 20 */
-	UPROPERTY(EditAnywhere, Category = "Inventory")
-	float HealAmount = 20.f;
 
 	/**
 	 * 체력 포션을 소비합니다
@@ -364,13 +414,9 @@ struct FInv_HealthPotionFragment : public FInv_ConsumableFragment
  * 소비 시 플레이어의 마나를 회복시키는 기능을 제공합니다
  */
 USTRUCT(BlueprintType)
-struct FInv_ManaPotionFragment : public FInv_ConsumableFragment
+struct FInv_ManaPotionFragment : public FInv_ConsumeModifier
 {
 	GENERATED_BODY()
-
-	/** 이 포션이 회복시키는 마나 수치. 기본값은 20 */
-	UPROPERTY(EditAnywhere, Category = "Inventory")
-	float ManaAmount = 20.f;
 
 	/**
 	 * 마나 포션을 소비합니다
