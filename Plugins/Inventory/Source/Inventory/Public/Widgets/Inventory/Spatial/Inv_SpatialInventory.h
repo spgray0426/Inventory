@@ -156,12 +156,62 @@ private:
 	 * @param Canvas 위젯을 포함하는 캔버스 패널
 	 */
 	void SetItemDescriptionSizeAndPosition(UInv_ItemDescription* Description, UCanvasPanel* Canvas) const;
-	
+
+	/**
+	 * 호버 아이템을 지정된 장비 슬롯에 장착할 수 있는지 확인합니다
+	 *
+	 * 다음 조건들을 모두 만족해야 true를 반환합니다:
+	 * - 슬롯이 유효하고 비어있어야 함
+	 * - 호버 아이템이 존재해야 함
+	 * - 호버 아이템이 스택 가능한 아이템이 아니어야 함
+	 * - 호버 아이템이 장비 카테고리여야 함
+	 * - 아이템의 장비 타입이 슬롯의 장비 타입 태그와 일치해야 함
+	 *
+	 * @param EquippedGridSlot 확인할 장비 슬롯
+	 * @param EquipmentTypeTag 슬롯이 요구하는 장비 타입 태그 (예: Weapon, Helmet)
+	 * @return 장착 가능하면 true, 불가능하면 false
+	 */
 	bool CanEquipHoverItem(UInv_EquippedGridSlot* EquippedGridSlot, const FGameplayTag& EquipmentTypeTag) const;
-	
+
+	/**
+	 * 특정 아이템이 장착된 슬롯을 찾습니다
+	 *
+	 * 모든 장비 슬롯을 순회하여 지정된 아이템을 포함하는 슬롯을 찾습니다.
+	 * 장비 해제 시 어느 슬롯에서 아이템을 제거해야 하는지 알기 위해 사용됩니다.
+	 *
+	 * @param EquippedItem 찾을 장착된 아이템
+	 * @return 아이템이 장착된 슬롯 (찾지 못하면 nullptr)
+	 */
+	UInv_EquippedGridSlot* FindSlotWithEquippedItem(UInv_InventoryItem* EquippedItem) const;
+
+	/**
+	 * 장비 슬롯에서 아이템을 제거합니다
+	 *
+	 * 슬롯의 인벤토리 아이템과 장착 아이템 위젯을 모두 nullptr로 설정하여
+	 * 슬롯을 비어있는 상태로 만듭니다. 장비 해제 시 사용됩니다.
+	 *
+	 * @param EquippedGridSlot 비울 장비 슬롯
+	 */
+	void ClearSlotOfItem(UInv_EquippedGridSlot* EquippedGridSlot);
+
+	/**
+	 * 장착 아이템 위젯을 제거하고 정리합니다
+	 *
+	 * 동작 순서:
+	 * 1. 클릭 이벤트 델리게이트 바인딩 해제
+	 * 2. 부모 위젯에서 제거 (시각적으로 사라짐)
+	 *
+	 * 장비 해제 시 UI에서 장착 아이템 위젯을 제거하기 위해 사용됩니다.
+	 *
+	 * @param EquippedSlottedItem 제거할 장착 아이템 위젯
+	 */
+	void RemoveEquippedSlottedItem(UInv_EquippedSlottedItem* EquippedSlottedItem);
+
+	/** 위젯 트리에서 찾은 모든 장비 슬롯들의 배열 (무기, 방어구 등의 장착 슬롯) */
 	UPROPERTY()
 	TArray<TObjectPtr<UInv_EquippedGridSlot>> EquippedGridSlots;
-	
+
+	/** 호버 아이템과 아이템 설명 위젯을 표시할 루트 캔버스 패널 (블루프린트에서 바인딩됨) */
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UCanvasPanel> CanvasPanel;
 	
