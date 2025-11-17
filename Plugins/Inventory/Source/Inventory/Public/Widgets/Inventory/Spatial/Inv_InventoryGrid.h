@@ -118,6 +118,12 @@ public:
 	 */
 	void ClearHoverItem();
 	
+	/**
+	 * 호버 아이템을 할당합니다
+	 * @param InventoryItem 인벤토리 아이템
+	 */
+	void AssignHoverItem(UInv_InventoryItem* InventoryItem);
+	
 private:
 
 	/**
@@ -335,12 +341,6 @@ private:
 	 * @param GridIndex 그리드 인덱스
 	 */
 	void PickUp(UInv_InventoryItem* ClickedInventoryItem, const int32 GridIndex);
-
-	/**
-	 * 호버 아이템을 할당합니다
-	 * @param InventoryItem 인벤토리 아이템
-	 */
-	void AssignHoverItem(UInv_InventoryItem* InventoryItem);
 
 	/**
 	 * 호버 아이템을 할당합니다 (이전 위치 정보 포함)

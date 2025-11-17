@@ -331,8 +331,25 @@ void UInv_SpatialInventory::EquippedGridSlotClicked(UInv_EquippedGridSlot* Equip
  * @param SlottedItem 클릭된 장착 아이템 위젯
  */
 void UInv_SpatialInventory::EquippedSlottedItemClicked(UInv_EquippedSlottedItem* SlottedItem)
-{
-	// TODO: 장착 아이템 해제 로직 구현
+{	
+	// Remove the Item Description
+	UInv_InventoryStatics::ItemUnhovered(GetOwningPlayer());
+	if (IsValid(GetHoverItem()) && GetHoverItem()->IsStackable()) return;
+	
+	// Get Item to Equip
+	UInv_InventoryItem* ItemToEquip = IsValid(GetHoverItem()) ? GetHoverItem()->GetInventoryItem() : nullptr;
+	
+	// Get Item to Unequip
+	UInv_InventoryItem* ItemToUnequip = SlottedItem->GetInventoryItem();
+	
+	UInv_EquippedGridSlot* EquippedGridSlot = FindSlotWithEquippedItem(ItemToUnequip);
+	
+	// Clear the equipped grid slot of this item (set it's inventory item to nullptr)
+	ClearSlotOfItem(EquippedGridSlot);
+
+	Grid_Equippables->AssignHoverItem(ItemToUnequip);
+	
+	RemoveEquippedSlottedItem(SlottedItem);
 }
 
 /**
@@ -419,21 +436,146 @@ void UInv_SpatialInventory::SetItemDescriptionSizeAndPosition(UInv_ItemDescripti
 	ItemDescriptionCPS->SetPosition(ClampedPosition);
 }
 
+/**
+ * 호버 아이템을 지정된 장비 슬롯에 장착할 수 있는지 검증합니다
+ *
+ * 장착 가능 조건 (모두 만족해야 함):
+ * 1. 슬롯이 유효하고 비어있어야 함 (이미 장착된 아이템이 없어야 함)
+ * 2. 호버 아이템이 존재해야 함
+ * 3. 들고 있는 아이템이 유효해야 함
+ * 4. 호버 아이템이 스택 가능한 아이템이 아니어야 함 (장비는 스택 불가)
+ * 5. 아이템의 카테고리가 Equippable이어야 함
+ * 6. 아이템의 타입 태그가 슬롯의 장비 타입 태그와 일치해야 함
+ *    (예: Weapon 슬롯에는 Weapon 태그를 가진 아이템만 장착 가능)
+ *
+ * @param EquippedGridSlot 확인할 장비 슬롯
+ * @param EquipmentTypeTag 슬롯이 요구하는 장비 타입 태그
+ * @return 모든 조건을 만족하면 true, 하나라도 만족하지 않으면 false
+ */
 bool UInv_SpatialInventory::CanEquipHoverItem(UInv_EquippedGridSlot* EquippedGridSlot, const FGameplayTag& EquipmentTypeTag) const
 {
+	// 슬롯이 유효하지 않거나 이미 아이템이 장착되어 있으면 장착 불가
 	if (!IsValid(EquippedGridSlot) || EquippedGridSlot->GetInventoryItem().IsValid()) return false;
 
+	// 호버 아이템을 가져옵니다
 	UInv_HoverItem* HoverItem = GetHoverItem();
 	if (!IsValid(HoverItem)) return false;
 
+	// 호버 아이템의 실제 인벤토리 아이템을 가져옵니다
 	UInv_InventoryItem* HeldItem = HoverItem->GetInventoryItem();
 
+	// 모든 장착 조건을 확인합니다
 	return HasHoverItem() && IsValid(HeldItem) &&
 		!HoverItem->IsStackable() &&
 			HeldItem->GetItemManifest().GetItemCategory() == EInv_ItemCategory::Equippable &&
 				HeldItem->GetItemManifest().GetItemType().MatchesTag(EquipmentTypeTag);
 }
 
+/**
+ * 특정 아이템이 장착된 슬롯을 찾습니다
+ *
+ * EquippedGridSlots 배열을 순회하며 지정된 아이템을 포함하는 슬롯을 찾습니다.
+ * FindByPredicate를 사용하여 효율적으로 검색합니다.
+ *
+ * 사용 시나리오:
+ * - 장비 해제: 어느 슬롯에서 아이템을 제거해야 하는지 확인
+ * - 장비 교체: 같은 타입의 다른 장비로 교체할 때 기존 슬롯 찾기
+ *
+ * @param EquippedItem 찾을 장착된 인벤토리 아이템
+ * @return 아이템이 장착된 슬롯 포인터 (찾지 못하면 nullptr)
+ */
+UInv_EquippedGridSlot* UInv_SpatialInventory::FindSlotWithEquippedItem(UInv_InventoryItem* EquippedItem) const
+{
+	// 람다 함수를 사용하여 EquippedItem과 일치하는 아이템을 가진 슬롯을 찾습니다
+	auto* FoundEquippedGridSlot = EquippedGridSlots.FindByPredicate([EquippedItem](const UInv_EquippedGridSlot* GridSlot)
+	{
+		return GridSlot->GetInventoryItem() == EquippedItem;
+	});
+	// 찾은 경우 해당 슬롯을 반환하고, 찾지 못한 경우 nullptr을 반환합니다
+	return FoundEquippedGridSlot ? *FoundEquippedGridSlot : nullptr;
+}
+
+/**
+ * 장비 슬롯을 비웁니다 (아이템 해제)
+ *
+ * 슬롯의 모든 아이템 정보를 nullptr로 설정하여 초기화합니다:
+ * - 장착 아이템 위젯 참조 제거
+ * - 인벤토리 아이템 참조 제거
+ *
+ * 이 함수는 슬롯을 비우기만 하며, 시각적인 위젯 제거는 하지 않습니다.
+ * 위젯 제거는 RemoveEquippedSlottedItem()에서 처리합니다.
+ *
+ * 장비 해제 흐름에서의 역할:
+ * 1. FindSlotWithEquippedItem() - 슬롯 찾기
+ * 2. ClearSlotOfItem() - 슬롯 비우기 (이 함수)
+ * 3. RemoveEquippedSlottedItem() - 위젯 제거
+ *
+ * @param EquippedGridSlot 비울 장비 슬롯
+ */
+void UInv_SpatialInventory::ClearSlotOfItem(UInv_EquippedGridSlot* EquippedGridSlot)
+{
+	if (IsValid(EquippedGridSlot))
+	{
+		// 장착 아이템 위젯 참조를 제거합니다
+		EquippedGridSlot->SetEquippedSlottedItem(nullptr);
+		// 인벤토리 아이템 참조를 제거합니다
+		EquippedGridSlot->SetInventoryItem(nullptr);
+	}
+}
+
+/**
+ * 장착 아이템 위젯을 UI에서 제거하고 정리합니다
+ *
+ * 동작 순서:
+ * 1. 위젯의 유효성을 확인합니다
+ * 2. 클릭 이벤트 델리게이트가 바인딩되어 있으면 해제합니다
+ * 3. 위젯을 부모 위젯(오버레이)에서 제거하여 화면에서 사라지게 합니다
+ *
+ * 델리게이트 바인딩 해제의 중요성:
+ * - 메모리 누수 방지
+ * - 삭제된 위젯을 통한 이벤트 호출 방지
+ * - Unreal의 델리게이트 시스템에서 권장하는 정리 패턴
+ *
+ * 장비 해제 흐름에서의 역할:
+ * 1. FindSlotWithEquippedItem() - 슬롯 찾기
+ * 2. ClearSlotOfItem() - 슬롯 비우기
+ * 3. RemoveEquippedSlottedItem() - 위젯 제거 (이 함수)
+ *
+ * @param EquippedSlottedItem 제거할 장착 아이템 위젯
+ */
+void UInv_SpatialInventory::RemoveEquippedSlottedItem(UInv_EquippedSlottedItem* EquippedSlottedItem)
+{
+	if (!IsValid(EquippedSlottedItem)) return;
+
+	// 클릭 델리게이트가 이미 바인딩되어 있는지 확인하고 해제합니다
+	// 메모리 누수와 댕글링 포인터 문제를 방지하기 위함입니다
+	if (EquippedSlottedItem->OnEquippedSlottedItemClicked.IsAlreadyBound(this, &ThisClass::EquippedSlottedItemClicked))
+	{
+		EquippedSlottedItem->OnEquippedSlottedItemClicked.RemoveDynamic(this, &ThisClass::EquippedSlottedItemClicked);
+	}
+	// 부모 위젯(오버레이)에서 제거하여 화면에서 사라지게 합니다
+	EquippedSlottedItem->RemoveFromParent();
+}
+
+/**
+ * 아이템 설명 위젯을 가져옵니다 (지연 초기화 패턴)
+ *
+ * 처음 호출될 때만 위젯을 생성하고, 이후에는 캐시된 인스턴스를 반환합니다.
+ * 이는 메모리 효율성을 위한 최적화 기법입니다.
+ *
+ * 동작:
+ * 1. ItemDescription이 nullptr인지 확인
+ * 2. nullptr이면 새 위젯 생성
+ * 3. 생성된 위젯을 캔버스 패널에 추가
+ * 4. 위젯 반환
+ *
+ * 지연 초기화를 사용하는 이유:
+ * - 위젯이 실제로 필요할 때만 생성하여 초기 로딩 시간 단축
+ * - 사용하지 않는 경우 메모리 절약
+ * - Unreal의 위젯 생성이 비용이 높은 작업이므로 필요할 때만 수행
+ *
+ * @return 아이템 설명 위젯 인스턴스
+ */
 UInv_ItemDescription* UInv_SpatialInventory::GetItemDescription()
 {
 	// 아직 생성되지 않은 경우에만 위젯을 생성합니다 (지연 초기화 패턴)
