@@ -228,7 +228,7 @@ void FInv_StrengthModifier::OnUnequip(APlayerController* PC)
 	GEngine->AddOnScreenDebugMessage(
 		-1,
 		5.f,
-		FColor::Green,
+		FColor::Red,
 		FString::Printf(TEXT("아이템은 장착되지 않았습니다. 힘 감소: %f"),
 			GetValue()));
 }
@@ -262,5 +262,15 @@ void FInv_EquipmentFragment::Assimilate(UInv_CompositeBase* Composite) const
 	{
 		const auto& ModRef = Modifier.Get();
 		ModRef.Assimilate(Composite);
+	}
+}
+
+void FInv_EquipmentFragment::Manifest()
+{
+	FInv_InventoryItemFragment::Manifest();
+	for (auto& Modifier : EquipModifiers)
+	{
+		auto& ModRef = Modifier.GetMutable();
+		ModRef.Manifest();
 	}
 }

@@ -19,7 +19,10 @@ namespace FragmentTags
 
 	/** 소비 가능 프래그먼트 태그 (FragmentTags.ConsumableFragment) - 아이템 소비 기능 활성화 */
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(ConsumableFragment)
-
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(EquipmentFragment)
+	
+	
+	
 	/** 아이템 이름 프래그먼트 태그 (FragmentTags.ItemNameFragment) - 아이템 이름 및 텍스트 정보 정의 */
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(ItemNameFragment)
 
