@@ -124,10 +124,10 @@ private:
 	/**
 	 * 장착된 아이템이 클릭되었을 때 호출됩니다
 	 * 장착된 아이템을 해제하거나 다른 작업을 처리합니다
-	 * @param SlottedItem 클릭된 장착 아이템 위젯
+	 * @param EquippedSlottedItem 클릭된 장착 아이템 위젯
 	 */
 	UFUNCTION()
-	void EquippedSlottedItemClicked(UInv_EquippedSlottedItem* SlottedItem);
+	void EquippedSlottedItemClicked(UInv_EquippedSlottedItem* EquippedSlottedItem);
 	
 	/**
 	 * 모든 버튼을 비활성화하고 선택된 버튼만 활성화합니다
@@ -207,6 +207,50 @@ private:
 	 */
 	void RemoveEquippedSlottedItem(UInv_EquippedSlottedItem* EquippedSlottedItem);
 
+	/**
+	 * 장착 슬롯에 새로운 장착 아이템 위젯을 생성합니다
+	 *
+	 * 장비 교체 시 호출되며, 기존 장착 아이템의 정보를 사용하여
+	 * 새로운 아이템을 같은 슬롯에 장착합니다.
+	 *
+	 * 동작 순서:
+	 * 1. 슬롯의 OnItemEquipped() 호출하여 위젯 생성
+	 * 2. 기존 장착 아이템의 장비 타입 태그 사용
+	 * 3. 새 위젯에 클릭 이벤트 바인딩
+	 * 4. 슬롯에 위젯 참조 설정
+	 *
+	 * 사용 시나리오:
+	 * - A 무기를 들고 B 무기를 클릭: B를 해제하고 A를 장착
+	 * - 빈 슬롯에서 장착된 아이템 클릭: 해제 후 다른 아이템 장착
+	 *
+	 * @param EquippedSlottedItem 기존 장착 아이템 위젯 (장비 타입 태그 참조용)
+	 * @param EquippedGridSlot 아이템을 장착할 슬롯
+	 * @param ItemToEquip 장착할 새 인벤토리 아이템
+	 */
+	void MakeEquippedSlottedItem(UInv_EquippedSlottedItem* EquippedSlottedItem, UInv_EquippedGridSlot* EquippedGridSlot, UInv_InventoryItem* ItemToEquip);
+
+	/**
+	 * 장비 장착/해제 델리게이트를 브로드캐스트합니다
+	 *
+	 * 서버와 클라이언트 모두에서 장비 상태 변경을 알리기 위해
+	 * 인벤토리 컴포넌트의 델리게이트를 브로드캐스트합니다.
+	 *
+	 * 동작:
+	 * 1. 서버에 장비 교체 RPC 전송 (모든 네트워크 모드에서)
+	 * 2. 데디케이티드 서버가 아닌 경우:
+	 *    - OnItemEquipped 브로드캐스트 (새 아이템 장착 알림)
+	 *    - OnItemUnequipped 브로드캐스트 (기존 아이템 해제 알림)
+	 *
+	 * 네트워크 고려사항:
+	 * - Server_EquipSlotClicked는 모든 클라이언트에서 호출
+	 * - UI 델리게이트는 데디케이티드 서버에서는 불필요 (UI 없음)
+	 * - 리슨 서버와 클라이언트는 UI 업데이트를 위해 델리게이트 필요
+	 *
+	 * @param ItemToEquip 장착할 아이템 (nullptr 가능)
+	 * @param ItemToUnequip 해제할 아이템 (nullptr 가능)
+	 */
+	void BroadcastSlotClickedDelegates(UInv_InventoryItem* ItemToEquip, UInv_InventoryItem* ItemToUnequip) const;
+	
 	/** 위젯 트리에서 찾은 모든 장비 슬롯들의 배열 (무기, 방어구 등의 장착 슬롯) */
 	UPROPERTY()
 	TArray<TObjectPtr<UInv_EquippedGridSlot>> EquippedGridSlots;
