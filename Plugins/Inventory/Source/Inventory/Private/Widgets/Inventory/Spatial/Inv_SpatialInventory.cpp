@@ -622,10 +622,10 @@ void UInv_SpatialInventory::MakeEquippedSlottedItem(UInv_EquippedSlottedItem* Eq
 
 	// 새 위젯에 클릭 이벤트를 바인딩합니다
 	// 이를 통해 사용자가 장착된 아이템을 다시 클릭하여 해제할 수 있습니다
-	SlottedItem->OnEquippedSlottedItemClicked.AddDynamic(this, &ThisClass::EquippedSlottedItemClicked);
+	if (IsValid(SlottedItem)) SlottedItem->OnEquippedSlottedItemClicked.AddDynamic(this, &ThisClass::EquippedSlottedItemClicked);
 
 	// 슬롯에 새 위젯 참조를 저장합니다
-	if (IsValid(SlottedItem)) EquippedGridSlot->SetEquippedSlottedItem(SlottedItem);
+	 EquippedGridSlot->SetEquippedSlottedItem(SlottedItem);
 }
 
 /**
