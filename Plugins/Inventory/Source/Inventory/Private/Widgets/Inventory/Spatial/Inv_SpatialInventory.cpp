@@ -302,9 +302,7 @@ void UInv_SpatialInventory::EquippedGridSlotClicked(UInv_EquippedGridSlot* Equip
 
 	// 장착 아이템 클릭 이벤트를 바인딩합니다
 	EquippedSlottedItem->OnEquippedSlottedItemClicked.AddDynamic(this, &ThisClass::EquippedSlottedItemClicked);
-
-	// 호버 아이템을 그리드에서 제거합니다 (아이템이 장착되었으므로)
-	Grid_Equippables->ClearHoverItem();
+	
 
 	// 인벤토리 컴포넌트를 가져옵니다
 	UInv_InventoryComponent* InventoryComponent = UInv_InventoryStatics::GetInventoryComponent(GetOwningPlayer());
@@ -320,6 +318,9 @@ void UInv_SpatialInventory::EquippedGridSlotClicked(UInv_EquippedGridSlot* Equip
 	{
 		InventoryComponent->OnItemEquipped.Broadcast(HoverItem->GetInventoryItem());
 	}
+	
+	// 호버 아이템을 그리드에서 제거합니다 (아이템이 장착되었으므로)
+	Grid_Equippables->ClearHoverItem();
 }
 
 /**

@@ -19,6 +19,12 @@ namespace FragmentTags
 	/** 소비 가능 프래그먼트를 식별하기 위한 소비 가능 프래그먼트 태그 정의 */
 	UE_DEFINE_GAMEPLAY_TAG(ConsumableFragment, "FragmentTags.ConsumableFragment")
 
+	UE_DEFINE_GAMEPLAY_TAG(EquipmentFragment, "FragmentTags.EquipmentFragment")
+	
+	
+	
+	
+	
 	/** 아이템 이름 및 텍스트 정보를 식별하기 위한 아이템 이름 프래그먼트 태그 정의 */
 	UE_DEFINE_GAMEPLAY_TAG(ItemNameFragment, "FragmentTags.ItemNameFragment")
 
