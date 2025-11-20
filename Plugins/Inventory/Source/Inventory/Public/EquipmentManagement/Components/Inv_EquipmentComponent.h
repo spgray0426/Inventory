@@ -28,6 +28,8 @@ protected:
     virtual void BeginPlay() override;
 
 private:
+    void InitInventoryComponent();
+    void InitPlayerController();
     
     UFUNCTION()
     void OnItemEquipped(UInv_InventoryItem* EquippedItem);
@@ -35,7 +37,10 @@ private:
     UFUNCTION()
     void OnItemUnequipped(UInv_InventoryItem* UnequippedItem);
 
-    void InitInventoryComponent();
+    UFUNCTION()
+    void OnPossessedPawnChange(APawn* OldPawn, APawn* NewPawn);
+    
+    
     
     AInv_EquipActor* SpawnEquippedActor(FInv_EquipmentFragment* EquipmentFragment, const FInv_ItemManifest& Manifest, USkeletalMeshComponent* AttachMesh);
 
