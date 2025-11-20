@@ -23,6 +23,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FStackChange, const FInv_SlotAvailab
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FItemEquipStatusChanged, UInv_InventoryItem*, Item);
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FInventoryMenuToggled, bool, bOpen);
+
 /**
  * 인벤토리 관리를 담당하는 액터 컴포넌트
  * 서버 권한 기반의 인벤토리 연산을 처리하며, Fast Array를 통해 인벤토리 상태를 복제합니다
@@ -127,6 +129,7 @@ public:
 	
 	FItemEquipStatusChanged OnItemEquipped;
 	FItemEquipStatusChanged OnItemUnequipped;
+	FInventoryMenuToggled OnInventoryMenuToggled;
 	
 protected:
 	/**

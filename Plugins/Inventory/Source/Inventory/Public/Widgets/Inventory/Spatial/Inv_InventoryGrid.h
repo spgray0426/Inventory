@@ -124,6 +124,8 @@ public:
 	 */
 	void AssignHoverItem(UInv_InventoryItem* InventoryItem);
 	
+	void OnHide();
+	
 private:
 
 	/**
@@ -137,14 +139,14 @@ private:
 	 * @param Item 확인할 인벤토리 아이템
 	 * @return 슬롯 사용 가능 여부 결과
 	 */
-	FInv_SlotAvailabilityResult HasRoomForItem(const UInv_InventoryItem* Item);
+	FInv_SlotAvailabilityResult HasRoomForItem(const UInv_InventoryItem* Item, const int32 StackAmountOverride = -1);
 
 	/**
 	 * 아이템 매니페스트를 위한 공간이 있는지 확인합니다
 	 * @param Manifest 확인할 아이템 매니페스트
 	 * @return 슬롯 사용 가능 여부 결과
 	 */
-	FInv_SlotAvailabilityResult HasRoomForItem(const FInv_ItemManifest& Manifest);
+	FInv_SlotAvailabilityResult HasRoomForItem(const FInv_ItemManifest& Manifest, const int32 StackAmountOverride = -1);
 
 	/**
 	 * 결과에 따라 지정된 인덱스에 아이템을 추가합니다
@@ -349,7 +351,7 @@ private:
 	 * @param PreviousGridIndex 이전 그리드 인덱스
 	 */
 	void AssignHoverItem(UInv_InventoryItem* InventoryItem, const int32 GridIndex, const int32 PreviousGridIndex);
-
+	
 	/**
 	 * 그리드에서 아이템을 제거합니다
 	 * @param InventoryItem 제거할 인벤토리 아이템
@@ -519,6 +521,8 @@ private:
 	 */
 	void CreateItemPopUp(const int32 GridIndex);
 
+	void PutHoverItemBack();
+	
 	/**
 	 * 슬롯에 배치된 아이템이 클릭되었을 때 호출됩니다
 	 * @param GridIndex 그리드 인덱스
@@ -583,6 +587,8 @@ private:
 	 */
 	void OnTileParametersUpdated(const FInv_TileParameters& Parameters);
 
+	UFUNCTION()
+	void OnInventoryMenuToggled(bool bOpen);
 	
 	/** 인벤토리 컴포넌트에 대한 약한 참조 */
 	TWeakObjectPtr<UInv_InventoryComponent> InventoryComponent;

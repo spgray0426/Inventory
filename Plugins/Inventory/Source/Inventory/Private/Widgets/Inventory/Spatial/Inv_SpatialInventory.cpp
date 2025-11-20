@@ -325,31 +325,55 @@ void UInv_SpatialInventory::EquippedGridSlotClicked(UInv_EquippedGridSlot* Equip
 /**
  * 장착된 아이템이 클릭되었을 때 호출됩니다
  *
- * 장착된 아이템을 해제하거나 다른 작업을 처리합니다.
- * TODO: 장착 해제 로직 구현 필요
+ * 장착된 아이템을 해제하거나, 호버 아이템이 있는 경우 교체합니다.
  *
- * @param SlottedItem 클릭된 장착 아이템 위젯
+ * 동작 흐름:
+ * 1. 아이템 설명 위젯 숨김
+ * 2. 호버 아이템이 스택 가능하면 중단 (장비는 스택 불가)
+ * 3. 장착할 아이템과 해제할 아이템 식별
+ * 4. 기존 장착 아이템이 있던 슬롯 찾기
+ * 5. 슬롯을 비우고 기존 아이템을 호버 아이템으로 변환
+ * 6. 기존 장착 위젯 제거
+ * 7. 새 아이템이 있으면 장착 (교체)
+ * 8. 서버에 알림 및 델리게이트 브로드캐스트
+ *
+ * 사용 시나리오:
+ * - 장착된 무기 클릭 (호버 없음): 무기 해제하여 인벤토리로
+ * - 새 무기를 들고 장착된 무기 클릭: 기존 무기 해제 후 새 무기 장착
+ *
+ * @param EquippedSlottedItem 클릭된 장착 아이템 위젯
  */
-void UInv_SpatialInventory::EquippedSlottedItemClicked(UInv_EquippedSlottedItem* SlottedItem)
-{	
-	// Remove the Item Description
+void UInv_SpatialInventory::EquippedSlottedItemClicked(UInv_EquippedSlottedItem* EquippedSlottedItem)
+{
+	// 아이템 설명 위젯을 숨깁니다
 	UInv_InventoryStatics::ItemUnhovered(GetOwningPlayer());
+
+	// 호버 아이템이 스택 가능하면 중단 (장비 슬롯에는 스택 가능 아이템 장착 불가)
 	if (IsValid(GetHoverItem()) && GetHoverItem()->IsStackable()) return;
-	
-	// Get Item to Equip
+
+	// 장착할 아이템 가져오기 (호버 아이템이 있으면 그것을, 없으면 nullptr)
 	UInv_InventoryItem* ItemToEquip = IsValid(GetHoverItem()) ? GetHoverItem()->GetInventoryItem() : nullptr;
-	
-	// Get Item to Unequip
-	UInv_InventoryItem* ItemToUnequip = SlottedItem->GetInventoryItem();
-	
+
+	// 해제할 아이템 가져오기 (현재 클릭된 장착 아이템)
+	UInv_InventoryItem* ItemToUnequip = EquippedSlottedItem->GetInventoryItem();
+
+	// 해제할 아이템이 장착되어 있던 슬롯 찾기
 	UInv_EquippedGridSlot* EquippedGridSlot = FindSlotWithEquippedItem(ItemToUnequip);
-	
-	// Clear the equipped grid slot of this item (set it's inventory item to nullptr)
+
+	// 슬롯을 비웁니다 (인벤토리 아이템 참조를 nullptr로 설정)
 	ClearSlotOfItem(EquippedGridSlot);
 
+	// 해제된 아이템을 호버 아이템으로 만듭니다 (마우스 커서를 따라다니도록)
 	Grid_Equippables->AssignHoverItem(ItemToUnequip);
-	
-	RemoveEquippedSlottedItem(SlottedItem);
+
+	// 기존 장착 아이템 위젯을 UI에서 제거합니다
+	RemoveEquippedSlottedItem(EquippedSlottedItem);
+
+	// 새로운 아이템을 장착합니다 (ItemToEquip이 nullptr이면 장착만 해제됨)
+	MakeEquippedSlottedItem(EquippedSlottedItem, EquippedGridSlot, ItemToEquip);
+
+	// 서버에 알리고 델리게이트를 브로드캐스트합니다
+	BroadcastSlotClickedDelegates(ItemToEquip, ItemToUnequip);
 }
 
 /**
@@ -388,7 +412,11 @@ void UInv_SpatialInventory::DisableButtons(UButton* Button)
 void UInv_SpatialInventory::SetActiveGrid(UInv_InventoryGrid* Grid, UButton* Button)
 {
 	// 이전 그리드의 커서를 숨깁니다
-	if (ActiveGrid.IsValid()) ActiveGrid->HideCursor();
+	if (ActiveGrid.IsValid())
+	{
+		ActiveGrid->HideCursor();
+		ActiveGrid->OnHide();
+	}
 	// 새로운 그리드를 활성화합니다
 	ActiveGrid = Grid;
 	// 새 그리드의 커서를 표시합니다
@@ -555,6 +583,94 @@ void UInv_SpatialInventory::RemoveEquippedSlottedItem(UInv_EquippedSlottedItem* 
 	}
 	// 부모 위젯(오버레이)에서 제거하여 화면에서 사라지게 합니다
 	EquippedSlottedItem->RemoveFromParent();
+}
+
+/**
+ * 장착 슬롯에 새로운 장착 아이템 위젯을 생성합니다
+ *
+ * 장비 교체 프로세스의 일부로, 기존 장착 아이템 위젯이 제거된 후
+ * 새로운 아이템을 같은 슬롯에 장착하기 위해 호출됩니다.
+ *
+ * 동작 순서:
+ * 1. 슬롯 유효성 검사
+ * 2. 슬롯의 OnItemEquipped() 호출하여 새 위젯 생성
+ *    - 기존 장착 아이템의 장비 타입 태그 재사용 (같은 슬롯이므로)
+ *    - 타일 크기는 인벤토리 위젯에서 가져옴
+ * 3. 새 위젯에 클릭 이벤트 바인딩
+ * 4. 슬롯에 새 위젯 참조 저장
+ *
+ * 중요:
+ * - ItemToEquip이 nullptr이면 슬롯은 비어있는 상태로 유지됨
+ * - 기존 장착 아이템의 장비 타입 태그를 사용하여 같은 타입 슬롯에 배치
+ *
+ * @param EquippedSlottedItem 기존 장착 아이템 위젯 (장비 타입 태그 참조용)
+ * @param EquippedGridSlot 아이템을 장착할 슬롯
+ * @param ItemToEquip 장착할 새 인벤토리 아이템 (nullptr 가능)
+ */
+void UInv_SpatialInventory::MakeEquippedSlottedItem(UInv_EquippedSlottedItem* EquippedSlottedItem, UInv_EquippedGridSlot* EquippedGridSlot, UInv_InventoryItem* ItemToEquip)
+{
+	// 슬롯이 유효한지 확인
+	if (!IsValid(EquippedGridSlot)) return;
+
+	// 슬롯에 새 아이템을 장착하고 위젯 생성
+	// 기존 장착 아이템의 장비 타입 태그를 재사용합니다 (같은 슬롯이므로)
+	UInv_EquippedSlottedItem* SlottedItem = EquippedGridSlot->OnItemEquipped(
+		ItemToEquip,
+		EquippedSlottedItem->GetEquipmentTypeTag(), // 기존 아이템의 타입 태그 (Weapon, Helmet 등)
+		UInv_InventoryStatics::GetInventoryWidget(GetOwningPlayer())->GetTileSize()
+		);
+
+	// 새 위젯에 클릭 이벤트를 바인딩합니다
+	// 이를 통해 사용자가 장착된 아이템을 다시 클릭하여 해제할 수 있습니다
+	SlottedItem->OnEquippedSlottedItemClicked.AddDynamic(this, &ThisClass::EquippedSlottedItemClicked);
+
+	// 슬롯에 새 위젯 참조를 저장합니다
+	if (IsValid(SlottedItem)) EquippedGridSlot->SetEquippedSlottedItem(SlottedItem);
+}
+
+/**
+ * 장비 장착/해제 델리게이트를 브로드캐스트합니다
+ *
+ * 장비 상태 변경을 서버와 다른 시스템에 알리기 위한 함수입니다.
+ * 네트워크 멀티플레이어를 고려하여 서버 RPC와 로컬 델리게이트를
+ * 적절히 처리합니다.
+ *
+ * 동작:
+ * 1. 인벤토리 컴포넌트 가져오기
+ * 2. 서버 RPC 호출 (모든 네트워크 모드에서)
+ *    - Server_EquipSlotClicked: 서버에 장비 변경 알림
+ *    - 서버는 이를 처리하고 모든 클라이언트에 복제
+ * 3. UI 델리게이트 브로드캐스트 (데디케이티드 서버 제외)
+ *    - OnItemEquipped: 새 아이템 장착 알림 (UI 업데이트용)
+ *    - OnItemUnequipped: 기존 아이템 해제 알림 (UI 업데이트용)
+ *
+ * 네트워크 고려사항:
+ * - 데디케이티드 서버는 UI가 없으므로 UI 델리게이트 불필요
+ * - 리슨 서버와 클라이언트는 로컬 UI 업데이트를 위해 델리게이트 필요
+ * - Server_EquipSlotClicked는 항상 호출되어야 서버가 상태를 동기화할 수 있음
+ *
+ * @param ItemToEquip 장착할 아이템 (nullptr이면 장착만 해제)
+ * @param ItemToUnequip 해제할 아이템 (nullptr이면 단순 장착)
+ */
+void UInv_SpatialInventory::BroadcastSlotClickedDelegates(UInv_InventoryItem* ItemToEquip, UInv_InventoryItem* ItemToUnequip) const
+{
+	// 인벤토리 컴포넌트를 가져옵니다
+	UInv_InventoryComponent* InventoryComponent = UInv_InventoryStatics::GetInventoryComponent(GetOwningPlayer());
+	check(IsValid(InventoryComponent));
+
+	// 서버에 장비 변경을 알립니다 (모든 네트워크 모드에서 호출)
+	// 서버는 이 정보를 받아 모든 클라이언트에 복제합니다
+	InventoryComponent->Server_EquipSlotClicked(ItemToEquip, ItemToUnequip);
+
+	// 데디케이티드 서버가 아닌 경우 (리슨 서버 또는 클라이언트)
+	// 로컬 UI 업데이트를 위해 델리게이트를 브로드캐스트합니다
+	if (GetOwningPlayer()->GetNetMode() != NM_DedicatedServer)
+	{
+		// 새 아이템 장착 이벤트 브로드캐스트 (UI에서 장착 효과 표시 등)
+		InventoryComponent->OnItemEquipped.Broadcast(ItemToEquip);
+		// 기존 아이템 해제 이벤트 브로드캐스트 (UI에서 해제 효과 표시 등)
+		InventoryComponent->OnItemUnequipped.Broadcast(ItemToUnequip);
+	}
 }
 
 /**
