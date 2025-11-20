@@ -10,6 +10,10 @@
  * 
  */
 
+struct FGameplayTag;
+struct FInv_ItemManifest;
+struct FInv_EquipmentFragment;
+class AInv_EquipActor;
 class UInv_InventoryItem;
 class UInv_InventoryComponent;
 
@@ -32,6 +36,14 @@ private:
     void OnItemUnequipped(UInv_InventoryItem* UnequippedItem);
 
     void InitInventoryComponent();
+    
+    AInv_EquipActor* SpawnEquippedActor(FInv_EquipmentFragment* EquipmentFragment, const FInv_ItemManifest& Manifest, USkeletalMeshComponent* AttachMesh);
+
+    AInv_EquipActor* FindEquippedActor(const FGameplayTag& EquipmentTypeTag);
+    void RemoveEquippedActor(const FGameplayTag& EquipmentTypeTag);
+    
+    UPROPERTY()
+    TArray<TObjectPtr<AInv_EquipActor>> EquippedActors;
     
     TWeakObjectPtr<UInv_InventoryComponent> InventoryComponent;
     TWeakObjectPtr<APlayerController> OwningPlayerController;
