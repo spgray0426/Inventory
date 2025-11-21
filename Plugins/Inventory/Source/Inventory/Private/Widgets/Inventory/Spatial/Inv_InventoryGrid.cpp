@@ -463,7 +463,9 @@ void UInv_InventoryGrid::OnGridSlotClicked(int32 GridIndex, const FPointerEvent&
 		OnSlottedItemClicked(CurrentQueryResult.UpperLeftIndex, MouseEvent);
 		return;
 	}
-
+	
+	if (!IsInGridBounds(ItemDropIndex,HoverItem->GetGridDimensions())) return;
+	
 	// 빈 슬롯이면 아이템을 놓습니다
 	auto GridSlot = GridSlots[ItemDropIndex];
 	if (!GridSlot->GetInventoryItem().IsValid())

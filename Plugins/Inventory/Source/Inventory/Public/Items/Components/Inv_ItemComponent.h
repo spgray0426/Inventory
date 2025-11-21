@@ -45,7 +45,8 @@ public:
 	 * @return 아이템 매니페스트 (프래그먼트, 카테고리, 타입 정보 포함)
 	 */
 	FInv_ItemManifest GetItemManifest() const { return ItemManifest; }
-
+	
+	FInv_ItemManifest& GetItemManifestMutable() { return ItemManifest; }
 	/**
 	 * 아이템이 주워졌을 때 호출되는 함수
 	 * OnPickedUp 블루프린트 이벤트를 발생시킵니다

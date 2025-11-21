@@ -58,7 +58,7 @@ public:
 	 * @param StackCount 추가할 스택 수량
 	 */
 	UFUNCTION(Server, Reliable)
-	void Server_AddNewItem(UInv_ItemComponent* ItemComponent, int32 StackCount);
+	void Server_AddNewItem(UInv_ItemComponent* ItemComponent, int32 StackCount, int32 Remainder);
 
 	/**
 	 * 서버 RPC: 기존 아이템에 스택을 추가합니다
@@ -114,6 +114,8 @@ public:
 	void SpawnDroppedItem(UInv_InventoryItem* Item, int32 StackCount);
 
 	UInv_InventoryBase* GetInventoryMenu() const { return InventoryMenu; }
+	
+	bool IsMenuOpen() const { return bInventoryMenuOpen; }
 	
 	/** 아이템이 추가될 때 호출되는 델리게이트 */
 	FInventoryItemChange OnItemAdded;
