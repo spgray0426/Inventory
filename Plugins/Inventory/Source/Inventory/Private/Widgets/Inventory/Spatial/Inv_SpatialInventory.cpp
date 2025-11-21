@@ -11,6 +11,7 @@
 #include "Components/WidgetSwitcher.h"
 #include "InventoryManagement/Components/Inv_InventoryComponent.h"
 #include "InventoryManagement/Utils/Inv_InventoryStatics.h"
+#include "Items/Fragments/Inv_ItemFragment.h"
 #include "Widgets/Inventory/GridSlots/Inv_EquippedGridSlot.h"
 #include "Widgets/Inventory/HoverItem/Inv_HoverItem.h"
 #include "Widgets/Inventory/SlottedItems/Inv_EquippedSlottedItem.h"
@@ -87,6 +88,7 @@ void UInv_SpatialInventory::NativeTick(const FGeometry& MyGeometry, float InDelt
 	// 마우스 커서를 따라다니도록 하기 위함입니다
 	if (!IsValid(ItemDescription)) return;
 	SetItemDescriptionSizeAndPosition(ItemDescription, CanvasPanel);
+	SetEquippedItemDescriptionSizeAndPosition(ItemDescription, EquippedItemDescription, CanvasPanel);
 }
 
 /**
@@ -149,12 +151,16 @@ void UInv_SpatialInventory::OnItemHovered(UInv_InventoryItem* Item)
 	// 지연 후에 설명을 표시하는 람다를 타이머 델리게이트에 바인딩합니다
 	// 이를 통해 마우스를 빠르게 움직일 때는 설명이 표시되지 않습니다
 	FTimerDelegate DescriptionTimerDelegate;
-	DescriptionTimerDelegate.BindLambda([this, &Manifest, DescriptionWidget]()
+	DescriptionTimerDelegate.BindLambda([this, Item ,&Manifest, DescriptionWidget]()
 	{
 		// HitTestInvisible로 설정하여 마우스 이벤트를 방해하지 않으면서 보이도록 합니다
 		GetItemDescription()->SetVisibility(ESlateVisibility::HitTestInvisible);
 		// 매니페스트의 모든 인벤토리 프래그먼트를 위젯에 동화시킵니다
 		Manifest.AssimilateInventoryFragments(DescriptionWidget);
+		
+		FTimerDelegate EquippedDescriptionTimerDelegate;
+		EquippedDescriptionTimerDelegate.BindUObject(this, &ThisClass::ShowEquippedItemDescription, Item);
+		GetOwningPlayer()->GetWorldTimerManager().SetTimer(EquippedDescriptionTimer, EquippedDescriptionTimerDelegate, EquippedDescriptionTimerDelay, false);
 	});
 
 	// 설정된 지연 시간 후에 타이머를 실행합니다 (한 번만)
@@ -177,6 +183,9 @@ void UInv_SpatialInventory::OnItemUnHovered()
 	GetItemDescription()->SetVisibility(ESlateVisibility::Collapsed);
 	// 실행 대기 중인 타이머를 취소합니다
 	GetOwningPlayer()->GetWorldTimerManager().ClearTimer(DescriptionTimer);
+	
+	GetEquippedItemDescription()->SetVisibility(ESlateVisibility::Collapsed);
+	GetOwningPlayer()->GetWorldTimerManager().ClearTimer(EquippedDescriptionTimer);
 }
 
 /**
@@ -672,6 +681,70 @@ void UInv_SpatialInventory::BroadcastSlotClickedDelegates(UInv_InventoryItem* It
 		// 기존 아이템 해제 이벤트 브로드캐스트 (UI에서 해제 효과 표시 등)
 		InventoryComponent->OnItemUnequipped.Broadcast(ItemToUnequip);
 	}
+}
+
+void UInv_SpatialInventory::SetEquippedItemDescriptionSizeAndPosition(UInv_ItemDescription* Description, UInv_ItemDescription* EquippedDescription, UCanvasPanel* Canvas) const
+{
+	UCanvasPanelSlot* ItemDescriptionCPS = UWidgetLayoutLibrary::SlotAsCanvasSlot(Description);
+	UCanvasPanelSlot* EquippedItemDescriptionCPS = UWidgetLayoutLibrary::SlotAsCanvasSlot(EquippedDescription);
+	if (!IsValid(ItemDescriptionCPS) || !IsValid(EquippedItemDescriptionCPS)) return;
+
+	const FVector2D ItemDescriptionSize = Description->GetBoxSize();
+	const FVector2D EquippedItemDescriptionSize = EquippedDescription->GetBoxSize();
+
+	FVector2D ClampedPosition = UInv_WidgetUtils::GetClampedWidgetPosition(
+		UInv_WidgetUtils::GetWidgetSize(Canvas),
+		ItemDescriptionSize,
+		UWidgetLayoutLibrary::GetMousePositionOnViewport(GetOwningPlayer()));
+	ClampedPosition.X -= EquippedItemDescriptionSize.X;
+
+	EquippedItemDescriptionCPS->SetSize(EquippedItemDescriptionSize);
+	EquippedItemDescriptionCPS->SetPosition(ClampedPosition);
+}
+
+void UInv_SpatialInventory::ShowEquippedItemDescription(UInv_InventoryItem* Item)
+{
+	const auto& Manifest = Item->GetItemManifest();
+	const FInv_EquipmentFragment* EquipmentFragment = Manifest.GetFragmentOfType<FInv_EquipmentFragment>();
+	if (!EquipmentFragment) return;
+
+	const FGameplayTag HoveredEquipmentType = EquipmentFragment->GetEquipmentType();
+	
+	auto EquippedGridSlot = EquippedGridSlots.FindByPredicate([Item](const UInv_EquippedGridSlot* GridSlot)
+	{
+		return GridSlot->GetInventoryItem() == Item;
+	});
+	if (EquippedGridSlot != nullptr) return; // 호버 아이템은 이미 장착되어 있고, 아이템 설명도 이미 보여줘요
+
+	// 장착된 아이템이 아니니 같은 장비 유형으로 장착된 아이템을 찾아보세요
+	auto FoundEquippedSlot = EquippedGridSlots.FindByPredicate([HoveredEquipmentType](const UInv_EquippedGridSlot* GridSlot)
+	{
+		return GridSlot->GetInventoryItem()->GetItemManifest().GetFragmentOfType<FInv_EquipmentFragment>()->GetEquipmentType() == HoveredEquipmentType;
+	});
+	UInv_EquippedGridSlot* EquippedSlot = FoundEquippedSlot ? *FoundEquippedSlot : nullptr;
+	if (!IsValid(EquippedSlot)) return; // No equipped item with the same equipment type
+
+	UInv_InventoryItem* EquippedItem = EquippedSlot->GetInventoryItem().Get();
+	if (!IsValid(EquippedItem)) return;
+
+	const auto& EquippedItemManifest = EquippedItem->GetItemManifest();
+	UInv_ItemDescription* DescriptionWidget = GetEquippedItemDescription();
+
+	auto EquippedDescriptionWidget = GetEquippedItemDescription();
+	
+	EquippedDescriptionWidget->Collapse();
+	DescriptionWidget->SetVisibility(ESlateVisibility::HitTestInvisible);	
+	EquippedItemManifest.AssimilateInventoryFragments(EquippedDescriptionWidget);
+}
+
+UInv_ItemDescription* UInv_SpatialInventory::GetEquippedItemDescription()
+{
+	if (!IsValid(EquippedItemDescription))
+	{
+		EquippedItemDescription = CreateWidget<UInv_ItemDescription>(GetOwningPlayer(), EquippedItemDescriptionClass);
+		CanvasPanel->AddChild(EquippedItemDescription);
+	}
+	return EquippedItemDescription;
 }
 
 /**
