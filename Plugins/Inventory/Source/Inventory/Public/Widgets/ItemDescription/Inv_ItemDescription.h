@@ -27,6 +27,7 @@ public:
      */
     FVector2D GetBoxSize() const;
 
+    virtual void SetVisibility(ESlateVisibility InVisibility) override;
 private:
 
     /** 위젯의 크기를 결정하는 SizeBox 컴포넌트 */

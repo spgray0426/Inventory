@@ -11,3 +11,12 @@ FVector2D UInv_ItemDescription::GetBoxSize() const
     // 이 크기는 화면 경계 내에 위젯을 배치하기 위한 계산에 사용됩니다
     return SizeBox->GetDesiredSize();
 }
+
+void UInv_ItemDescription::SetVisibility(ESlateVisibility InVisibility)
+{
+    for (auto Child : GetChildren())
+    {
+        Child->Collapse();
+    }
+    Super::SetVisibility(InVisibility);
+}

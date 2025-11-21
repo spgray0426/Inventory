@@ -151,10 +151,10 @@ void UInv_SpatialInventory::OnItemHovered(UInv_InventoryItem* Item)
 	FTimerDelegate DescriptionTimerDelegate;
 	DescriptionTimerDelegate.BindLambda([this, &Manifest, DescriptionWidget]()
 	{
-		// 매니페스트의 모든 인벤토리 프래그먼트를 위젯에 동화시킵니다
-		Manifest.AssimilateInventoryFragments(DescriptionWidget);
 		// HitTestInvisible로 설정하여 마우스 이벤트를 방해하지 않으면서 보이도록 합니다
 		GetItemDescription()->SetVisibility(ESlateVisibility::HitTestInvisible);
+		// 매니페스트의 모든 인벤토리 프래그먼트를 위젯에 동화시킵니다
+		Manifest.AssimilateInventoryFragments(DescriptionWidget);
 	});
 
 	// 설정된 지연 시간 후에 타이머를 실행합니다 (한 번만)

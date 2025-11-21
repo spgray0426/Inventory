@@ -78,6 +78,8 @@ void UInv_EquippedGridSlot::NativeOnMouseLeave(const FPointerEvent& InMouseEvent
     UInv_HoverItem* HoverItem = UInv_InventoryStatics::GetHoverItem(GetOwningPlayer());
     if (!IsValid(HoverItem)) return;
 
+    if (IsValid(EquippedSlottedItem)) return;
+    
     // 호버 아이템의 타입이 이 슬롯의 장비 타입과 일치하는지 확인
     if (HoverItem->GetItemType().MatchesTag(EquipmentTypeTag))
     {
