@@ -215,6 +215,11 @@ void FInv_ManaPotionFragment::OnConsume(APlayerController* PC)
     GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, FString::Printf(TEXT("Mana Potion consumed! Mana replenished by: %f"), GetValue()));
 }
 
+/**
+ * 힘 스탯 수정자 장착 처리
+ * 실제 구현에서는 플레이어의 스탯 시스템에 힘 증가 효과를 적용해야 합니다
+ * 현재는 디버그 메시지만 출력합니다 (테스트/프로토타입 용도)
+ */
 void FInv_StrengthModifier::OnEquip(APlayerController* PC)
 {
 	GEngine->AddOnScreenDebugMessage(
@@ -225,6 +230,11 @@ void FInv_StrengthModifier::OnEquip(APlayerController* PC)
 			GetValue()));
 }
 
+/**
+ * 힘 스탯 수정자 해제 처리
+ * 실제 구현에서는 플레이어의 스탯 시스템에서 힘 증가 효과를 제거해야 합니다
+ * 현재는 디버그 메시지만 출력합니다 (테스트/프로토타입 용도)
+ */
 void FInv_StrengthModifier::OnUnequip(APlayerController* PC)
 {
 	GEngine->AddOnScreenDebugMessage(
@@ -235,10 +245,19 @@ void FInv_StrengthModifier::OnUnequip(APlayerController* PC)
 			GetValue()));
 }
 
+/**
+ * 장비를 장착하여 모든 수정자의 효과를 적용합니다
+ * 이미 장착된 상태면 중복 장착을 방지하기 위해 즉시 반환합니다
+ *
+ * @param PC 장비를 장착하는 플레이어 컨트롤러
+ */
 void FInv_EquipmentFragment::OnEquip(APlayerController* PC)
 {
+	// 이미 장착된 상태면 중복 장착 방지
 	if (bEquipped) return;
 	bEquipped = true;
+
+	// 모든 장비 수정자를 순회하며 각각의 효과를 적용합니다
 	for (auto& Modifier : EquipModifiers)
 	{
 		auto& ModRef = Modifier.GetMutable();
@@ -246,10 +265,19 @@ void FInv_EquipmentFragment::OnEquip(APlayerController* PC)
 	}
 }
 
+/**
+ * 장비를 해제하여 모든 수정자의 효과를 제거합니다
+ * 장착되지 않은 상태면 중복 해제를 방지하기 위해 즉시 반환합니다
+ *
+ * @param PC 장비를 해제하는 플레이어 컨트롤러
+ */
 void FInv_EquipmentFragment::OnUnequip(APlayerController* PC)
 {
+	// 장착되지 않은 상태면 중복 해제 방지
 	if (!bEquipped) return;
 	bEquipped = false;
+
+	// 모든 장비 수정자를 순회하며 각각의 효과를 제거합니다
 	for (auto& Modifier : EquipModifiers)
 	{
 		auto& ModRef = Modifier.GetMutable();
@@ -257,9 +285,18 @@ void FInv_EquipmentFragment::OnUnequip(APlayerController* PC)
 	}
 }
 
+/**
+ * 장비 프래그먼트 데이터를 컴포지트 위젯에 동화시킵니다
+ * 부모 클래스의 Assimilate를 호출한 후, 모든 EquipModifier의 데이터를
+ * 순회하며 각각 위젯에 동화시킵니다
+ *
+ * @param Composite 데이터를 동화시킬 컴포지트 위젯
+ */
 void FInv_EquipmentFragment::Assimilate(UInv_CompositeBase* Composite) const
 {
 	FInv_InventoryItemFragment::Assimilate(Composite);
+
+	// 모든 장비 수정자를 순회하며 각각을 위젯에 동화시킵니다
 	for (const auto& Modifier : EquipModifiers)
 	{
 		const auto& ModRef = Modifier.Get();
@@ -267,9 +304,16 @@ void FInv_EquipmentFragment::Assimilate(UInv_CompositeBase* Composite) const
 	}
 }
 
+/**
+ * 프래그먼트 초기화 시 모든 수정자를 초기화합니다
+ * 부모 클래스의 Manifest를 호출한 후, 모든 EquipModifier에 대해
+ * Manifest()를 호출하여 랜덤 스탯 값 생성 등의 초기화 작업을 수행합니다
+ */
 void FInv_EquipmentFragment::Manifest()
 {
 	FInv_InventoryItemFragment::Manifest();
+
+	// 모든 장비 수정자를 순회하며 각각을 초기화합니다
 	for (auto& Modifier : EquipModifiers)
 	{
 		auto& ModRef = Modifier.GetMutable();
@@ -277,15 +321,32 @@ void FInv_EquipmentFragment::Manifest()
 	}
 }
 
+/**
+ * 장비 액터를 스폰하고 스켈레탈 메시에 부착합니다
+ * EquipActorClass를 사용하여 월드에 액터를 생성하고,
+ * 지정된 소켓에 부착합니다
+ *
+ * @param AttachMesh 장비를 부착할 스켈레탈 메시 컴포넌트
+ * @return 스폰되어 부착된 장비 액터 (실패 시 nullptr)
+ */
 AInv_EquipActor* FInv_EquipmentFragment::SpawnAttachedActor(USkeletalMeshComponent* AttachMesh) const
 {
+	// 장비 액터 클래스와 부착할 메시가 유효한지 확인
 	if (!IsValid(EquipActorClass) || !IsValid(AttachMesh)) return nullptr;
 
+	// 월드에 장비 액터 스폰
 	AInv_EquipActor* SpawnedActor = AttachMesh->GetWorld()->SpawnActor<AInv_EquipActor>(EquipActorClass);
+
+	// 지정된 소켓에 액터 부착 (스케일 제외하고 스냅)
 	SpawnedActor->AttachToComponent(AttachMesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale, SocketAttachPoint);
+
 	return SpawnedActor;
 }
 
+/**
+ * 현재 장착된 장비 액터를 파괴합니다
+ * EquippedActor 참조가 유효한 경우에만 파괴를 시도합니다
+ */
 void FInv_EquipmentFragment::DestroyAttachedActor() const
 {
 	if (EquippedActor.IsValid())
@@ -294,6 +355,12 @@ void FInv_EquipmentFragment::DestroyAttachedActor() const
 	}
 }
 
+/**
+ * 장착된 장비 액터 참조를 설정합니다
+ * 장비 컴포넌트에서 액터를 스폰한 후 이 함수를 호출하여 참조를 저장합니다
+ *
+ * @param EquipActor 장착된 장비 액터
+ */
 void FInv_EquipmentFragment::SetEquippedActor(AInv_EquipActor* EquipActor)
 {
 	EquippedActor = EquipActor;

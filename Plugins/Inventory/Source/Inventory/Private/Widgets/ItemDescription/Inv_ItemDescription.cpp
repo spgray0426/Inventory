@@ -14,6 +14,8 @@ FVector2D UInv_ItemDescription::GetBoxSize() const
 
 void UInv_ItemDescription::SetVisibility(ESlateVisibility InVisibility)
 {
+    // 가시성 변경 전 모든 자식 위젯을 축소(Collapse)하여 초기화
+    // 이전에 표시된 아이템 정보를 지우고 새로운 정보만 표시하기 위함
     for (auto Child : GetChildren())
     {
         Child->Collapse();
