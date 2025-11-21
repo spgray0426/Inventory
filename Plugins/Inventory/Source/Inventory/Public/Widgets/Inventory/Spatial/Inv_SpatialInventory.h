@@ -129,6 +129,9 @@ private:
 	UFUNCTION()
 	void EquippedSlottedItemClicked(UInv_EquippedSlottedItem* EquippedSlottedItem);
 	
+	UFUNCTION()
+	void ShowEquippedItemDescription(UInv_InventoryItem* Item);
+	
 	/**
 	 * 모든 버튼을 비활성화하고 선택된 버튼만 활성화합니다
 	 * @param Button 활성화 상태로 유지할 버튼
@@ -251,6 +254,10 @@ private:
 	 */
 	void BroadcastSlotClickedDelegates(UInv_InventoryItem* ItemToEquip, UInv_InventoryItem* ItemToUnequip) const;
 	
+	void SetEquippedItemDescriptionSizeAndPosition(UInv_ItemDescription* Description, UInv_ItemDescription* EquippedDescription, UCanvasPanel* Canvas) const;
+	
+	UInv_ItemDescription* GetEquippedItemDescription();
+	
 	/** 위젯 트리에서 찾은 모든 장비 슬롯들의 배열 (무기, 방어구 등의 장착 슬롯) */
 	UPROPERTY()
 	TArray<TObjectPtr<UInv_EquippedGridSlot>> EquippedGridSlots;
@@ -298,14 +305,23 @@ private:
 	UPROPERTY()
 	TObjectPtr<UInv_ItemDescription> ItemDescription;
 	
+	UPROPERTY(EditAnywhere, Category = "Inventory")
+	TSubclassOf<UInv_ItemDescription> EquippedItemDescriptionClass;
+
+	UPROPERTY()
+	TObjectPtr<UInv_ItemDescription> EquippedItemDescription;
+	
 	/** 아이템 설명 표시를 지연시키는 타이머 핸들 */
 	FTimerHandle DescriptionTimer;
 
+	FTimerHandle EquippedDescriptionTimer;
+	
 	/** 아이템 설명이 표시되기까지의 지연 시간 (초). 기본값은 0.5초 */
 	UPROPERTY(EditAnywhere, Category = "Inventory")
 	float DescriptionTimerDelay {0.5f};
 
-	
+	UPROPERTY(EditAnywhere, Category = "Inventory")
+	float EquippedDescriptionTimerDelay {0.5f};
 };
 
 
