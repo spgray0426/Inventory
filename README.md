@@ -7,6 +7,8 @@
 - **컴포지션 기반 아이템 시스템**: 프래그먼트를 조합하여 다양한 아이템 생성
 - **GameplayTag 기반 UI 자동화**: 프래그먼트와 위젯이 자동으로 매칭되는 동적 UI 시스템
 - **그리드 기반 공간 인벤토리**: Resident Evil 스타일의 테트리스형 인벤토리
+- **장비 시스템**: 소켓 기반 장비 부착 및 스탯 수정자 시스템
+- **캐릭터 프리뷰**: 3D 캐릭터 디스플레이와 장비 미리보기 기능
 - **멀티플레이어 지원**: Fast Array Serialization을 통한 효율적인 네트워크 복제
 - **플러그인 아키텍처**: 독립적인 플러그인으로 다른 프로젝트에 재사용 가능
 
@@ -36,6 +38,14 @@
 - `FInv_HealthPotionFragment`: 체력 회복 포션 구현
 - `FInv_ManaPotionFragment`: 마나 회복 포션 구현
 
+**장비 아이템 프래그먼트**
+- `FInv_EquipModifier`: 개별 장비 스탯 효과 정의 (힘, 민첩 등)
+- `FInv_EquipmentFragment`: 여러 수정자를 포함하는 컴포지트 구조
+  - 장비 액터 스폰 및 소켓 부착 관리
+  - 장착/해제 시 스탯 효과 적용/제거
+  - 랜덤 스탯 값 생성 및 유지
+- `FInv_StrengthModifier`: 힘 스탯 수정자 구현
+
 #### GameplayTag 목록
 
 ```cpp
@@ -45,6 +55,7 @@ namespace FragmentTags
     IconFragment              // 아이콘 이미지
     StackableFragment         // 스택 가능
     ConsumableFragment        // 소비 가능
+    EquipmentFragment         // 장비 가능
     ItemNameFragment          // 아이템 이름
     PrimaryStatFragment       // 주요 스탯
     ItemTypeFragment          // 아이템 타입
@@ -96,7 +107,13 @@ UInv_CompositeBase (Abstract)
 **UInv_InventoryComponent**
 - 서버 권한 인벤토리 작업
 - Fast Array를 통한 자동 복제
-- 델리게이트: `OnItemAdded`, `OnItemRemoved`, `NoRoomInInventory`
+- 델리게이트: `OnItemAdded`, `OnItemRemoved`, `NoRoomInInventory`, `OnItemEquipped`, `OnItemUnequipped`
+
+**UInv_EquipmentComponent**
+- 장비 아이템의 장착/해제 관리
+- 장비 액터 스폰 및 스켈레탈 메시 부착
+- Pawn 변경 시 자동 재초기화
+- 프록시 메시 모드 지원 (UI 미리보기용)
 
 **UInv_ItemComponent**
 - 월드의 픽업 가능 아이템에 부착
@@ -143,14 +160,53 @@ FInv_SlotAvailability         // 단일 슬롯 용량
 FInv_SlotAvailabilityResult   // 전체 결과 (스택 지원 포함)
 ```
 
-### 5. 아이템 호버 및 설명 시스템
+### 5. 장비 시스템
 
-#### UInv_ItemDescription
+#### 장비 액터
+
+**AInv_EquipActor**
+- 캐릭터에 실제로 부착되는 장비 액터
+- `EquipmentType` GameplayTag로 장비 타입 식별
+- 소켓 기반 부착 시스템
+
+**AInv_ProxyMesh**
+- 인벤토리 UI용 캐릭터 프리뷰 액터
+- 별도의 스켈레탈 메시와 장비 컴포넌트 보유
+- 실제 플레이어와 독립적으로 장비 시뮬레이션
+
+#### 장비 프로세스
+
+1. **장착 시**:
+   - 인벤토리에서 장착 슬롯으로 아이템 이동
+   - `Server_EquipSlotClicked` RPC 호출
+   - 장비 컴포넌트가 `OnItemEquipped` 델리게이트 수신
+   - 장비 액터 스폰 및 소켓에 부착
+   - 스탯 수정자 효과 적용
+
+2. **해제 시**:
+   - 장착 슬롯에서 인벤토리로 아이템 이동
+   - `OnItemUnequipped` 델리게이트 수신
+   - 장비 액터 파괴
+   - 스탯 수정자 효과 제거
+
+### 6. UI 시스템
+
+#### 캐릭터 디스플레이
+
+**UInv_CharacterDisplay**
+- 3D 캐릭터 디스플레이 위젯
+- 마우스 드래그로 캐릭터 회전 가능
+- 프록시 메시와 연동하여 장착된 장비를 실시간 표시
+
+#### 아이템 설명
+
+**UInv_ItemDescription**
 
 컴포지트 패턴을 활용한 아이템 설명 위젯:
 - 아이템의 모든 프래그먼트를 순회
 - 각 프래그먼트가 매칭되는 위젯에 데이터 동화
 - 동적으로 위젯 확장/축소
+- 장착 아이템 정보 표시 지원
 
 #### 구현된 설명 위젯
 
@@ -169,9 +225,15 @@ FInv_SlotAvailabilityResult   // 전체 결과 (스택 지원 포함)
 Plugins/Inventory/
 ├── Content/
 │   ├── Items/                         # 아이템 블루프린트
-│   │   ├── BP_Inv_Potion_Small_Blue.uasset
-│   │   └── BP_Inv_Potion_Small_Red.uasset
+│   │   ├── Consumables/              # 소비형 아이템
+│   │   │   ├── BP_Inv_Potion_Small_Blue.uasset
+│   │   │   └── BP_Inv_Potion_Small_Red.uasset
+│   │   └── Equippables/              # 장비 아이템
+│   │       └── Cloaks/               # 망토 장비
+│   ├── EquipmentManagement/          # 장비 시스템
+│   │   └── BP_Inv_EquipmentComponent.uasset
 │   └── Widgets/
+│       ├── CharacterDisplay/          # 캐릭터 디스플레이
 │       ├── ItemDescription/           # 아이템 설명 위젯
 │       └── Inventory/                 # 인벤토리 UI
 ├── Source/Inventory/
@@ -185,8 +247,13 @@ Plugins/Inventory/
 │   │   │   ├── FastArray/            # 복제 시스템
 │   │   │   ├── Components/           # 컴포넌트
 │   │   │   └── Utils/                # 유틸리티
+│   │   ├── EquipmentManagement/      # 장비 시스템
+│   │   │   ├── Components/           # 장비 컴포넌트
+│   │   │   ├── EquipActor/           # 장비 액터
+│   │   │   └── ProxyMesh/            # 프록시 메시
 │   │   └── Widgets/
 │   │       ├── Composite/            # 컴포지트 위젯
+│   │       ├── CharacterDisplay/     # 캐릭터 디스플레이
 │   │       └── ItemDescription/      # 설명 위젯
 │   └── Private/                       # 구현 파일
 └── Inventory.uplugin                  # 플러그인 디스크립터
@@ -272,6 +339,10 @@ Number of Players = 2 (멀티플레이어 테스트)
 - [ ] 아이템 스택
 - [ ] 아이템 호버 시 설명 표시
 - [ ] 소비 아이템 사용
+- [ ] 장비 아이템 장착/해제
+- [ ] 캐릭터 디스플레이에서 장비 미리보기
+- [ ] 마우스 드래그로 캐릭터 회전
+- [ ] Pawn 변경 시 장비 유지
 - [ ] 멀티플레이어 복제
 
 ## 코딩 표준
