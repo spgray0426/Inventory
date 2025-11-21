@@ -8,6 +8,10 @@
 
 class UInv_EquipmentComponent;
 
+/**
+ * 인벤토리 UI에서 캐릭터와 장비를 미리보기 위한 프록시 메시 액터
+ * 실제 플레이어 캐릭터와 별개로 장비 시스템을 시뮬레이션합니다.
+ */
 UCLASS()
 class INVENTORY_API AInv_ProxyMesh : public AActor
 {
@@ -16,18 +20,21 @@ class INVENTORY_API AInv_ProxyMesh : public AActor
 public:
     AInv_ProxyMesh();
 
+    /** 프록시 스켈레탈 메시 컴포넌트 가져오기 */
     USkeletalMeshComponent* GetMesh() const { return Mesh; }
+
 protected:
     virtual void BeginPlay() override;
 
 private:
-    // This is the mesh on the player-controlled Character.
+    /** 플레이어 캐릭터의 원본 메시 참조 (향후 확장용) */
     TWeakObjectPtr<USkeletalMeshComponent> SourceMesh;
 
+    /** 프록시 메시용 장비 컴포넌트 (UI 미리보기 전용) */
     UPROPERTY(VisibleAnywhere)
     TObjectPtr<UInv_EquipmentComponent> EquipmentComponent;
 
-    // This is the proxy mesh we will see in the Inventory Menu.
+    /** 인벤토리 메뉴에서 표시될 프록시 스켈레탈 메시 */
     UPROPERTY(VisibleAnywhere)
     TObjectPtr<USkeletalMeshComponent> Mesh;
 };

@@ -427,58 +427,148 @@ struct FInv_ManaPotionFragment : public FInv_ConsumeModifier
 	virtual void OnConsume(APlayerController* PC) override;
 };
 
+// ============================================================================
+// 장비 시스템 (Equipment System)
+// ============================================================================
 
-// Equipment
-//
-
+/**
+ * 장비 아이템의 개별 효과를 정의하는 수정자 프래그먼트
+ * FInv_LabeledNumberFragment를 상속받아 라벨과 수치값을 가진 스탯 효과를 표현합니다
+ *
+ * 하나의 장비 아이템이 여러 스탯 효과를 가질 수 있도록 합니다
+ * 예: 힘 +5, 민첩 +3을 동시에 제공하는 갑옷
+ */
 USTRUCT(BlueprintType)
 struct FInv_EquipModifier : public FInv_LabeledNumberFragment
 {
 	GENERATED_BODY()
 
+	/**
+	 * 장비를 장착했을 때 호출되는 가상 함수
+	 * 파생 구조체에서 오버라이드하여 스탯 증가 등의 효과를 구현합니다
+	 * @param PC 장비를 장착하는 플레이어 컨트롤러
+	 */
 	virtual void OnEquip(APlayerController* PC) {}
+
+	/**
+	 * 장비를 해제했을 때 호출되는 가상 함수
+	 * 파생 구조체에서 오버라이드하여 스탯 감소 등의 효과를 구현합니다
+	 * @param PC 장비를 해제하는 플레이어 컨트롤러
+	 */
 	virtual void OnUnequip(APlayerController* PC) {}
 };
 
+/**
+ * 힘(Strength) 스탯을 증가시키는 장비 수정자
+ * 장착 시 힘을 증가시키고, 해제 시 감소시킵니다
+ */
 USTRUCT(BlueprintType)
 struct FInv_StrengthModifier : public FInv_EquipModifier
 {
 	GENERATED_BODY()
 
+	/**
+	 * 장착 시 힘 스탯 증가
+	 * @param PC 장비를 장착하는 플레이어 컨트롤러
+	 */
 	virtual void OnEquip(APlayerController* PC) override;
+
+	/**
+	 * 해제 시 힘 스탯 감소
+	 * @param PC 장비를 해제하는 플레이어 컨트롤러
+	 */
 	virtual void OnUnequip(APlayerController* PC) override;
 };
 
 
+/**
+ * 장착 가능한 장비 아이템을 정의하는 프래그먼트
+ * 여러 개의 FInv_EquipModifier를 포함할 수 있어 하나의 장비가 복합적인 스탯 효과를
+ * 제공할 수 있습니다 (예: 힘과 민첩을 동시에 증가시키는 갑옷)
+ *
+ * 장비 액터를 스폰하여 캐릭터의 스켈레탈 메시에 부착하고,
+ * 장착/해제 시 스탯 효과를 적용/제거합니다
+ */
 USTRUCT(BlueprintType)
 struct FInv_EquipmentFragment : public FInv_InventoryItemFragment
 {
 	GENERATED_BODY()
-	
-	void OnEquip(APlayerController* PC);
-	void OnUnequip(APlayerController* PC);
-	virtual void Assimilate(UInv_CompositeBase* Composite) const override;
-	virtual void Manifest() override;
-	
-	AInv_EquipActor* SpawnAttachedActor(USkeletalMeshComponent* AttachMesh) const;
-	void DestroyAttachedActor() const;
-	FGameplayTag GetEquipmentType() const { return EquipmentType; }
-	void SetEquippedActor(AInv_EquipActor* EquipActor);
-	
-	bool bEquipped{false};
-private:
 
+	/**
+	 * 장비를 장착하여 모든 수정자의 효과를 적용합니다
+	 * 배열의 각 EquipModifier에 대해 OnEquip()을 호출합니다
+	 * @param PC 장비를 장착하는 플레이어 컨트롤러
+	 */
+	void OnEquip(APlayerController* PC);
+
+	/**
+	 * 장비를 해제하여 모든 수정자의 효과를 제거합니다
+	 * 배열의 각 EquipModifier에 대해 OnUnequip()을 호출합니다
+	 * @param PC 장비를 해제하는 플레이어 컨트롤러
+	 */
+	void OnUnequip(APlayerController* PC);
+
+	/**
+	 * 장비 프래그먼트 데이터를 컴포지트 위젯에 동화시킵니다
+	 * 모든 EquipModifier의 데이터를 순회하며 각각 위젯에 동화시킵니다
+	 * @param Composite 데이터를 동화시킬 컴포지트 위젯
+	 */
+	virtual void Assimilate(UInv_CompositeBase* Composite) const override;
+
+	/**
+	 * 프래그먼트 초기화 시 모든 수정자를 초기화합니다
+	 * 각 EquipModifier의 Manifest()를 호출하여 랜덤 스탯 값 등을 생성합니다
+	 */
+	virtual void Manifest() override;
+
+	/**
+	 * 장비 액터를 스폰하고 지정된 소켓에 부착합니다
+	 * @param AttachMesh 장비를 부착할 스켈레탈 메시 컴포넌트
+	 * @return 스폰된 장비 액터
+	 */
+	AInv_EquipActor* SpawnAttachedActor(USkeletalMeshComponent* AttachMesh) const;
+
+	/**
+	 * 부착된 장비 액터를 파괴합니다
+	 */
+	void DestroyAttachedActor() const;
+
+	/**
+	 * 장비 타입 태그를 가져옵니다 (예: Inventory.Equipment.Type.Cloak)
+	 * @return 장비 타입을 나타내는 GameplayTag
+	 */
+	FGameplayTag GetEquipmentType() const { return EquipmentType; }
+
+	/**
+	 * 장착된 액터 참조를 설정합니다
+	 * @param EquipActor 장착된 장비 액터
+	 */
+	void SetEquippedActor(AInv_EquipActor* EquipActor);
+
+	/** 현재 장착 상태 여부 */
+	bool bEquipped{false};
+
+private:
+	/**
+	 * 이 장비가 제공하는 스탯 수정자들의 배열
+	 * 각 수정자는 독립적인 스탯 효과를 정의합니다 (힘, 민첩, 지능 등)
+	 * meta = (ExcludeBaseStruct): 에디터에서 기본 구조체를 제외하고 파생 타입만 선택 가능
+	 */
 	UPROPERTY(EditAnywhere, Category = "Inventory", meta = (ExcludeBaseStruct))
 	TArray<TInstancedStruct<FInv_EquipModifier>> EquipModifiers;
-	
+
+	/** 장착 시 스폰할 장비 액터 클래스 (예: 망토, 검, 방패 등의 비주얼 표현) */
 	UPROPERTY(EditAnywhere, Category = "Inventory")
 	TSubclassOf<AInv_EquipActor> EquipActorClass {nullptr};
 
+	/** 현재 장착된 장비 액터 참조 (약한 참조) */
 	TWeakObjectPtr<AInv_EquipActor> EquippedActor {nullptr};
 
+	/** 장비를 부착할 스켈레탈 메시의 소켓 이름 (예: "BackSocket", "RightHandSocket") */
 	UPROPERTY(EditAnywhere, Category = "Inventory")
 	FName SocketAttachPoint {NAME_None};
-	
+
+	/** 장비 타입을 식별하는 GameplayTag (같은 타입의 장비는 동시에 하나만 장착 가능) */
 	UPROPERTY(EditAnywhere, Category = "Inventory")
 	FGameplayTag EquipmentType {FGameplayTag::EmptyTag};
 };

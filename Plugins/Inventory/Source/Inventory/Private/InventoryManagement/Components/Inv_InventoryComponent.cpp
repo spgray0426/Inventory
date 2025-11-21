@@ -11,38 +11,49 @@
 
 UInv_InventoryComponent::UInv_InventoryComponent() : InventoryList(this)
 {
+	// 인벤토리는 틱이 필요하지 않음
 	PrimaryComponentTick.bCanEverTick = false;
-	SetIsReplicatedByDefault(true);
-	bReplicateUsingRegisteredSubObjectList = true;
-	bInventoryMenuOpen = false;
 
+	// 네트워크 복제 활성화
+	SetIsReplicatedByDefault(true);
+
+	// 서브 오브젝트 리스트를 통한 복제 사용 (인벤토리 아이템 복제를 위함)
+	bReplicateUsingRegisteredSubObjectList = true;
+
+	bInventoryMenuOpen = false;
 }
 
 void UInv_InventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
+	// 인벤토리 리스트를 복제 속성으로 등록
 	DOREPLIFETIME(ThisClass, InventoryList);
 }
 
 void UInv_InventoryComponent::TryAddItem(UInv_ItemComponent* ItemComponent)
 {
+	// 인벤토리에 아이템을 추가할 공간이 있는지 확인
 	FInv_SlotAvailabilityResult Result = InventoryMenu->HasRoomForItem(ItemComponent);
 
+	// 같은 타입의 아이템이 이미 인벤토리에 있는지 검색
 	UInv_InventoryItem* FoundItem = InventoryList.FindFirstItemByType(ItemComponent->GetItemManifest().GetItemType());
 	Result.Item = FoundItem;
-	
+
+	// 추가할 공간이 전혀 없으면 실패
 	if (Result.TotalRoomToFill == 0)
 	{
 		NoRoomInInventory.Broadcast();
 		return;
 	}
 
+	// 기존 아이템이 있고 스택 가능하면 스택에 추가
 	if (Result.Item.IsValid() && Result.bStackable)
 	{
 		OnStackChange.Broadcast(Result);
 		Server_AddStacksToItem(ItemComponent, Result.TotalRoomToFill, Result.Remainder);
 	}
+	// 새로운 아이템으로 추가
 	else if (Result.TotalRoomToFill > 0)
 	{
 		Server_AddNewItem(ItemComponent, Result.bStackable ? Result.TotalRoomToFill : 0, Result.Remainder);
@@ -51,18 +62,22 @@ void UInv_InventoryComponent::TryAddItem(UInv_ItemComponent* ItemComponent)
 
 void UInv_InventoryComponent::Server_AddNewItem_Implementation(UInv_ItemComponent* ItemComponent, int32 StackCount, int32 Remainder)
 {
+	// 인벤토리 리스트에 새 아이템 엔트리 추가
 	UInv_InventoryItem* NewItem = InventoryList.AddEntry(ItemComponent);
 	NewItem->SetTotalStackCount(StackCount);
-	
+
+	// 리슨 서버나 스탠드얼론에서는 로컬에서도 델리게이트 호출
 	if (GetOwner()->GetNetMode() == NM_ListenServer || GetOwner()->GetNetMode() == NM_Standalone)
 	{
 		OnItemAdded.Broadcast(NewItem);
 	}
 
+	// 남은 수량이 없으면 아이템 컴포넌트를 픽업 처리 (월드에서 제거)
 	if (Remainder == 0)
 	{
 		ItemComponent->PickedUp();
 	}
+	// 남은 수량이 있으면 아이템 컴포넌트의 스택 수량 업데이트
 	else if (FInv_StackableFragment* StackableFragment = ItemComponent->GetItemManifestMutable().GetFragmentOfTypeMutable<FInv_StackableFragment>())
 	{
 		StackableFragment->SetStackCount(Remainder);
@@ -71,10 +86,14 @@ void UInv_InventoryComponent::Server_AddNewItem_Implementation(UInv_ItemComponen
 
 void UInv_InventoryComponent::Server_AddStacksToItem_Implementation(UInv_ItemComponent* ItemComponent, int32 StackCount,int32 Remainder)
 {
+	// 아이템 컴포넌트에서 아이템 타입 가져오기
 	const FGameplayTag& ItemType = IsValid(ItemComponent) ? ItemComponent->GetItemManifest().GetItemType() : FGameplayTag::EmptyTag;
+
+	// 인벤토리에서 해당 타입의 아이템 찾기
 	UInv_InventoryItem* Item = InventoryList.FindFirstItemByType(ItemType);
 	if (!IsValid(Item)) return;
 
+	// 기존 스택에 새로운 스택 수량 추가
 	Item->SetTotalStackCount(Item->GetTotalStackCount() + StackCount);
 
 	if (Remainder == 0)
@@ -137,13 +156,14 @@ void UInv_InventoryComponent::Server_EquipSlotClicked_Implementation(UInv_Invent
 
 void UInv_InventoryComponent::Multicast_EquipSlotClicked_Implementation(UInv_InventoryItem* ItemToEquip, UInv_InventoryItem* ItemToUnequip)
 {
-	// 장비 구성 요소는 이러한 대리인의 의견을 듣습니다
+	// 장비 컴포넌트가 이 델리게이트를 리슨하여 장착/해제 처리
 	OnItemEquipped.Broadcast(ItemToEquip);
 	OnItemUnequipped.Broadcast(ItemToUnequip);
 }
 
 void UInv_InventoryComponent::ToggleInventoryMenu()
 {
+	// 인벤토리 메뉴 열기/닫기 토글
 	if (bInventoryMenuOpen)
 	{
 		CloseInventoryMenu();
@@ -157,6 +177,8 @@ void UInv_InventoryComponent::ToggleInventoryMenu()
 
 void UInv_InventoryComponent::AddRepSubObj(UObject* SubObj)
 {
+	// 복제 서브 오브젝트 리스트에 오브젝트 추가
+	// 인벤토리 아이템을 복제하기 위해 사용됨
 	if (IsUsingRegisteredSubObjectList() && IsReadyForReplication() && IsValid(SubObj))
 	{
 		AddReplicatedSubObject(SubObj);
