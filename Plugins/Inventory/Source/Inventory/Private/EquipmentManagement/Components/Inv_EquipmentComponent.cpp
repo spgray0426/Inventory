@@ -3,6 +3,7 @@
 
 #include "EquipmentManagement/Components/Inv_EquipmentComponent.h"
 
+#include "Components/SceneCaptureComponent2D.h"
 #include "EquipmentManagement/EquipActor/Inv_EquipActor.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/PlayerController.h"
@@ -14,6 +15,15 @@
 void UInv_EquipmentComponent::SetOwningSkeletalMesh(USkeletalMeshComponent* OwningMesh)
 {
     OwningSkeletalMesh = OwningMesh;
+}
+
+void UInv_EquipmentComponent::InitializeOwner(APlayerController* PlayerController)
+{
+    if (IsValid(PlayerController))
+    {
+        OwningPlayerController = PlayerController;
+    }
+    InitInventoryComponent();
 }
 
 void UInv_EquipmentComponent::BeginPlay()
@@ -87,6 +97,12 @@ void UInv_EquipmentComponent::RemoveEquippedActor(const FGameplayTag& EquipmentT
     if (AInv_EquipActor* EquippedActor = FindEquippedActor(EquipmentTypeTag); IsValid(EquippedActor))
     {
         EquippedActors.Remove(EquippedActor);
+        
+        if(USceneCaptureComponent2D* CaptureComp = Cast<USceneCaptureComponent2D>(GetOwner()->GetComponentByClass(USceneCaptureComponent2D::StaticClass()));IsValid(CaptureComp))
+        {
+            CaptureComp->ShowOnlyActorComponents(EquippedActor);
+        }
+        
         EquippedActor->Destroy();
     }
 }
@@ -102,13 +118,20 @@ void UInv_EquipmentComponent::OnItemEquipped(UInv_InventoryItem* EquippedItem)
     if (!EquipmentFragment) return;
 
     // 장비 장착 로직 실행
-    EquipmentFragment->OnEquip(OwningPlayerController.Get());
-
+    if (!bIsProxy)
+    {
+        EquipmentFragment->OnEquip(OwningPlayerController.Get());
+    }
     // 스켈레탈 메시에 장비 액터 스폰 및 부착
     if (!OwningSkeletalMesh.IsValid()) return;
     AInv_EquipActor* SpawnedEquipActor = SpawnEquippedActor(EquipmentFragment, ItemManifest, OwningSkeletalMesh.Get());
 
     EquippedActors.Add(SpawnedEquipActor);
+    
+    if(USceneCaptureComponent2D* CaptureComp = Cast<USceneCaptureComponent2D>(GetOwner()->GetComponentByClass(USceneCaptureComponent2D::StaticClass()));IsValid(CaptureComp))
+    {
+        CaptureComp->ShowOnlyActorComponents(SpawnedEquipActor);
+    }
 }
 
 void UInv_EquipmentComponent::OnItemUnequipped(UInv_InventoryItem* UnequippedItem)
@@ -122,7 +145,10 @@ void UInv_EquipmentComponent::OnItemUnequipped(UInv_InventoryItem* UnequippedIte
     if (!EquipmentFragment) return;
 
     // 장비 해제 로직 실행 및 액터 제거
-    EquipmentFragment->OnUnequip(OwningPlayerController.Get());
+    if (!bIsProxy)
+    {
+        EquipmentFragment->OnUnequip(OwningPlayerController.Get());
+    }
     RemoveEquippedActor(EquipmentFragment->GetEquipmentType());
 }
 
