@@ -29,7 +29,8 @@ public:
 
     /** 프록시 메시 여부 설정 (UI용 프리뷰 메시인 경우 true) */
     void SetIsProxy(bool bProxy) { bIsProxy = bProxy; }
-
+    
+    void InitializeOwner(APlayerController* PlayerController);
 protected:
     virtual void BeginPlay() override;
 

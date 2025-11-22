@@ -27,6 +27,10 @@ protected:
     virtual void BeginPlay() override;
 
 private:
+    
+    void DelayedInitializeOwner();
+    void DelayedInitialization();
+    
     /** 플레이어 캐릭터의 원본 메시 참조 (향후 확장용) */
     TWeakObjectPtr<USkeletalMeshComponent> SourceMesh;
 
@@ -37,4 +41,6 @@ private:
     /** 인벤토리 메뉴에서 표시될 프록시 스켈레탈 메시 */
     UPROPERTY(VisibleAnywhere)
     TObjectPtr<USkeletalMeshComponent> Mesh;
+    
+    FTimerHandle TimerForNextTick;
 };
